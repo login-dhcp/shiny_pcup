@@ -1,3 +1,7 @@
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function range(size, startAt = 0) {
     return [...Array(size).keys()].map(i => i + startAt);
 }
@@ -21,7 +25,7 @@ idolNames = ["마노", "히오리", "메구루",
     "토오루", "마도카", "코이토", "히나나",
     "니치카", "미코토"
 ];
-num_idols = 4;
+num_idols = 25;
 idols = idols.slice(0, num_idols);
 idolNames = idolNames.slice(0, num_idols);
 
@@ -32,7 +36,7 @@ data_all = {};
 startTime = "2021-04-12T15:00:00+09:00";
 endTime = "2021-04-20T12:00:00+09:00";
 
-function getDataAPI(eventId, characterId, ranks) {
+async function getDataAPI(eventId, characterId, ranks) {
     var xhttp = new XMLHttpRequest();
     var returnData = {};
     xhttp.onreadystatechange = function() {
@@ -51,6 +55,7 @@ function getDataAPI(eventId, characterId, ranks) {
     xhttp.send();
 
     data_all[characterId - 1] = returnData;
+    await sleep(500);
     return returnData;
 };
 
@@ -198,13 +203,13 @@ function buildRankingTable(time) {
         for (let j = 0; j < key_ranks.length; j++) {
             var column_values = [];
             for (let k = 0; k < idols.length; k++) {
-                var score = table_target.rows[k + 1].cells[j+1].innerHTML;
+                var score = table_target.rows[k + 1].cells[j + 1].innerHTML;
                 score = numberRemoveCommas(score);
                 score = Number(score);
                 column_values.push(score);
             }
             var sorted_values = column_values.slice();
-            sorted_values.sort(function(a, b){return a-b;});
+            sorted_values.sort(function(a, b) { return a - b; });
             code += `<td>${numberWithCommas(sorted_values.length - sorted_values.indexOf(column_values[i]))}</td>\n`;
         }
         code += '</tr>\n';
