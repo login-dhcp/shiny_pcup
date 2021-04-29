@@ -235,7 +235,7 @@ function update() {
 async function all() {
     var waitTime = 100;
     getAllData(waitTime);
-    await sleep(waitTime * (num_idols) * 2);
+    await sleep(waitTime * (num_idols) * 3);
 
     buildTimeSlider();
 
