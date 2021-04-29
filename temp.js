@@ -90,7 +90,16 @@ function buildBasicTable(time) {
             if (time === -1) {
                 data_final_log = data_rank[data_rank.length - 1];
             } else {
-                data_final_log = data_rank[time];
+                if (data_rank.length < numTimes) {
+                    var realTime = time - (numTimes - data_rank.length);
+                    if (realTime < 0) {
+                        data_final_log = data_rank[0];
+                    } else {
+                        data_final_log = data_rank[realTime];
+                    }
+                } else {
+                    data_final_log = data_rank[time];
+                }
             }
             code += `<td>${numberWithCommas(data_final_log["score"])}</td>\n`;
         }
@@ -168,7 +177,16 @@ function buildPredictionTable(time) {
             if (time === -1) {
                 data_final_log = data_rank[data_rank.length - 1];
             } else {
-                data_final_log = data_rank[time];
+                if (data_rank.length < numTimes) {
+                    var realTime = time - (numTimes - data_rank.length);
+                    if (realTime < 0) {
+                        data_final_log = data_rank[0];
+                    } else {
+                        data_final_log = data_rank[realTime];
+                    }
+                } else {
+                    data_final_log = data_rank[time];
+                }
             }
             var score = data_final_log["score"];
             var timeString = data_final_log["summaryTime"];
@@ -223,6 +241,7 @@ function buildRankingTable(time) {
 function update() {
     var slider = document.getElementById("timeRange");
     var sample_data = data_all[0][key_ranks[0]];
+    numTimes = sample_data.length;
     slider.addEventListener("input", function() {
         var time = sample_data[slider.value - 1]['summaryTime'];
         document.getElementById("timeText").innerHTML = `${time}`;
@@ -233,9 +252,9 @@ function update() {
 }
 
 async function all() {
-    var waitTime = 100;
+    var waitTime = 75;
     getAllData(waitTime);
-    await sleep(waitTime * (num_idols) * 3);
+    await sleep(waitTime * (num_idols) + 5000);
 
     buildTimeSlider();
 
