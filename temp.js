@@ -36,7 +36,7 @@ data_all = {};
 startTime = "2021-04-12T15:00:00+09:00";
 endTime = "2021-04-20T12:00:00+09:00";
 
-async function getDataAPI(eventId, characterId, ranks) {
+function getDataAPI(eventId, characterId, ranks) {
     var xhttp = new XMLHttpRequest();
     var returnData = {};
     xhttp.onreadystatechange = function() {
@@ -55,12 +55,13 @@ async function getDataAPI(eventId, characterId, ranks) {
     xhttp.send();
 
     data_all[characterId - 1] = returnData;
-    await sleep(500);
     return returnData;
 };
 
-function getAllData() {
+async function getAllData(waitTime) {
     for (let i = 0; i < idols.length; i++) {
+        // sleep(500).then(() => getDataAPI(eventId, i+1, key_ranks_str));
+        await sleep(waitTime);
         getDataAPI(eventId, i + 1, key_ranks_str);
         // data_all[i] = data_idol;
     }
@@ -231,8 +232,11 @@ function update() {
     })
 }
 
-$(document).ready(function(e) {
-    getAllData();
+async function all() {
+    var waitTime = 100;
+    getAllData(waitTime);
+    await sleep(waitTime * (num_idols) * 2);
+
     buildTimeSlider();
 
     buildBasicTable(-1);
@@ -240,4 +244,8 @@ $(document).ready(function(e) {
     buildRankingTable(-1);
 
     update();
+}
+
+$(document).ready(function(e) {
+    all();
 })
