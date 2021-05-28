@@ -25,7 +25,7 @@ idolNames = ["마노", "히오리", "메구루",
     "토오루", "마도카", "코이토", "히나나",
     "니치카", "미코토"
 ];
-num_idols = 5;
+num_idols = 25;
 idols = idols.slice(0, num_idols);
 idolNames = idolNames.slice(0, num_idols);
 
@@ -117,7 +117,7 @@ function buildTimeSlider() {
     timeRange.value = sample_data.length;
 
     var time = sample_data[timeRange.value - 1]['summaryTime'];
-    document.getElementById("timeText").innerHTML = `${time}`;
+    setTimeText(time);
 }
 
 function parseTime(time) {
@@ -238,13 +238,17 @@ function buildRankingTable(time) {
     document.getElementById("ranking_table").innerHTML = code;
 };
 
+function setTimeText(time) {
+    document.getElementById("timeText").innerHTML = `기록 시간: ${time}`;
+}
+
 function update() {
     var slider = document.getElementById("timeRange");
     var sample_data = data_all[0][key_ranks[0]];
     numTimes = sample_data.length;
     slider.addEventListener("input", function() {
         var time = sample_data[slider.value - 1]['summaryTime'];
-        document.getElementById("timeText").innerHTML = `${time}`;
+        setTimeText(time);
         buildBasicTable(slider.value - 1);
         buildPredictionTable(slider.value - 1);
         buildRankingTable(slider.value - 1);
