@@ -25,7 +25,7 @@ idolNames = ["마노", "히오리", "메구루",
     "토오루", "마도카", "코이토", "히나나",
     "니치카", "미코토"
 ];
-num_idols = 25;
+num_idols = 5;
 idols = idols.slice(0, num_idols);
 idolNames = idolNames.slice(0, num_idols);
 
