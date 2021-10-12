@@ -31,10 +31,10 @@ idolNames = idolNames.slice(0, num_idols);
 
 key_ranks_str = "1,10,100,1000,3000";
 key_ranks = ["1", "10", "100", "1000", "3000"];
-eventId = 40006;
+eventId = 40007;
 data_all = {};
-startTime = "2021-04-12T15:00:00+09:00";
-endTime = "2021-04-20T12:00:00+09:00";
+startTime = "2021-10-12T15:00:00+09:00";
+endTime = "2021-10-20T12:00:00+09:00";
 
 function getDataAPI(eventId, characterId, ranks) {
     var xhttp = new XMLHttpRequest();
