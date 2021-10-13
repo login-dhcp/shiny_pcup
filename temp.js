@@ -14,9 +14,6 @@ function numberRemoveCommas(x) {
     return x.toString().replace(/,*/g, "");
 }
 
-//idols = [1, 2];
-//idolNames = ["마노", "히오리"];
-idols = range(25, 1);
 idolNames = ["마노", "히오리", "메구루",
     "코가네", "마미미", "사쿠야", "유이카", "키리코",
     "아마나", "치유키", "텐카",
@@ -25,35 +22,48 @@ idolNames = ["마노", "히오리", "메구루",
     "토오루", "마도카", "코이토", "히나나",
     "니치카", "미코토"
 ];
-eventIDs = [40005, 40006, 40007];
 
-num_idols = 25;
-idols = idols.slice(0, num_idols);
-idolNames = idolNames.slice(0, num_idols);
+waitTime = 75;
+configs = [{
+    'eventID': 40005,
+    'idols': range(23, 1),
+    'key_ranks': ["1", "10", "100", "1000", "3000"],
+    'startTime': "2020-10-12T15:00:00+09:00",
+    'endTime': "2020-10-21T15:00:00+09:00",
+},
+{
+    'eventID': 40006,
+    'idols': range(25, 1),
+    'key_ranks': ["1", "10", "100", "1000", "3000"],
+    'startTime': "2021-04-12T15:00:00+09:00",
+    'endTime': "2021-04-20T15:00:00+09:00",
+},
+{
+    'eventID': 40007,
+    'idols': range(25, 1),
+    'key_ranks': ["1", "10", "100", "1000", "3000"],
+    'startTime': "2021-10-12T15:00:00+09:00",
+    'endTime': "2021-10-18T15:00:00+09:00",
+}]
 
-key_ranks_str = "1,10,100,1000,3000";
-key_ranks = ["1", "10", "100", "1000", "3000"];
-eventId = 40007;
 data_all = {};
-startTime = "2021-10-12T15:00:00+09:00";
-endTime = "2021-10-18T12:00:00+09:00";
+config = configs[configs.length-1];
 
 $(document).ready(function(e) {
     init();
 })
 
 async function init() {
-    var waitTime = 75;
+    buildEventIDSelector();
+
     await getAllData(waitTime);
     // await sleep(waitTime * (num_idols) + 5000);
     await sleep(1000);
 
-    buildEventIDSelector();
     buildTimeSlider();
 
-    updateHTML(-1);
-
-    update();
+    await update();
+    alert('finished!');
 }
 
 function updateHTML(time) {
@@ -62,15 +72,24 @@ function updateHTML(time) {
     buildRankingTable(time);
 }
 
-function update() {
+async function update() {
     var slider = document.getElementById("timeRange");
+    var key_ranks = config['key_ranks'];
+
     var sample_data = data_all[0][key_ranks[0]];
-    numTimes = sample_data.length;
-    slider.addEventListener("input", function() {
-        var time = sample_data[slider.value - 1]['summaryTime'];
-        setTimeText(time);
-        updateHTML(slider.value - 1);
-    })
+    var time = sample_data[slider.value - 1]['summaryTime'];
+    setTimeText(time);
+
+    updateHTML(slider.value-1);
+}
+
+async function getAllData(waitTime) {
+    var idols = config['idols'];    
+    for (let i = 0; i < idols.length; i++) {
+        await sleep(waitTime);
+        var key_ranks_str = config['key_ranks'].join(',');
+        getDataAPI(config['eventID'], i + 1, key_ranks_str);
+    }
 }
 
 function getDataAPI(eventId, characterId, ranks) {
@@ -95,29 +114,27 @@ function getDataAPI(eventId, characterId, ranks) {
     return returnData;
 };
 
-async function getAllData(waitTime) {
-    for (let i = 0; i < idols.length; i++) {
-        // sleep(500).then(() => getDataAPI(eventId, i+1, key_ranks_str));
-        await sleep(waitTime);
-        getDataAPI(eventId, i + 1, key_ranks_str);
-        // data_all[i] = data_idol;
-    }
-}
-
 ///////////////////////
 
 function buildEventIDSelector() {
-    var select = document.getElementById('eventId_select');
-    for (let i=0; i<eventIDs.length; i++) {
+    var select = document.getElementById('eventID_select');
+    for (let i=0; i<configs.length; i++) {
+        var _config = configs[i];
+        var _eventID = _config['eventID'];
+
         var opt = document.createElement('option');
-        opt.value = eventIDs[i];
-        opt.innerHTML = `${(eventIDs[i]-40000) / 2.}주년`;
+        opt.value = _eventID;
+        opt.innerHTML = `${(_eventID-40000) / 2.}주년`;
         select.appendChild(opt);
     }
-   document.getElementById('eventId_select_button').addEventListener('click', async function(e) {
-       eventId = document.getElementById('eventId_select').selectedOptions[0].value;
-       await getAllData();
-       updateHTML(-1);
+    select.selectedIndex = configs.length-1;
+
+   document.getElementById('eventID_select_button').addEventListener('click', async function(e) {
+       var _config_index = document.getElementById('eventID_select').selectedIndex;
+       config = configs[_config_index];
+       await getAllData(waitTime);
+       update();
+       alert('finished!');
    });
 }
 
@@ -125,20 +142,34 @@ function buildBasicTable(time) {
     var code = '';
     code += '<tr>\n';
     code += '<th>Idol</th>\n';
+
+    var key_ranks = config['key_ranks'];
+    var idols = config['idols'];
+
+    // 1. 각 열 추가
     for (let j = 0; j < key_ranks.length; j++) {
         code += `<th>${key_ranks[j]}</th>\n`;
     }
     code += '</tr>\n';
 
+    // 2. 각 데이터 추가
     for (let i = 0; i < idols.length; i++) {
         code += '<tr>\n';
         code += `<td>${idolNames[i]}</td>\n`
 
+        // 2. 아이돌별 데이터 추가
         var data_idol = data_all[i];
         for (let j = 0; j < key_ranks.length; j++) {
             var rank = key_ranks[j];
             var data_rank = data_idol[rank];
             var data_final_log;
+
+            var sample_data = data_all[0][key_ranks[0]];
+            var numTimes = sample_data.length;
+
+            // 2.1. 시간대별 데이터 추가
+            // time이 -1일 경우 최종데이터
+            // time이 index로 주어질 경우 실제 시간 계산해서 사용 TODO
             if (time === -1) {
                 data_final_log = data_rank[data_rank.length - 1];
             } else {
@@ -163,14 +194,115 @@ function buildBasicTable(time) {
 };
 
 function buildTimeSlider() {
+    var slider = document.getElementById("timeRange");
+    
+    var key_ranks = config['key_ranks'];
     var sample_data = data_all[0][key_ranks[0]];
-    var timeRange = document.getElementById("timeRange");
-    timeRange.max = sample_data.length;
-    timeRange.value = sample_data.length;
+    
+    slider.max = sample_data.length;
+    slider.value = sample_data.length;
 
-    var time = sample_data[timeRange.value - 1]['summaryTime'];
+    var time = sample_data[slider.value - 1]['summaryTime'];
     setTimeText(time);
+
+    slider.addEventListener("input", function() {
+        update();
+    });
 }
+
+function buildPredictionTable(time) {
+    var code = '';
+    code += '<tr>\n';
+    code += '<th>Idol</th>\n';
+
+    var key_ranks = config['key_ranks'];
+    var idols = config['idols'];    
+    for (let j = 0; j < key_ranks.length; j++) {
+        code += `<th>${key_ranks[j]}</th>\n`;
+    }
+    code += '</tr>\n';
+
+    for (let i = 0; i < idols.length; i++) {
+        code += '<tr>\n';
+        code += `<td>${idolNames[i]}</td>\n`
+
+        var data_idol = data_all[i];
+        for (let j = 0; j < key_ranks.length; j++) {
+            var rank = key_ranks[j];
+            var data_rank = data_idol[rank];
+            var data_final_log;
+
+            var sample_data = data_all[0][key_ranks[0]];
+            var numTimes = sample_data.length;
+            if (time === -1) {
+                data_final_log = data_rank[data_rank.length - 1];
+            } else {
+                if (data_rank.length < numTimes) {
+                    var realTime = time - (numTimes - data_rank.length);
+                    if (realTime < 0) {
+                        data_final_log = data_rank[0];
+                    } else {
+                        data_final_log = data_rank[realTime];
+                    }
+                } else {
+                    data_final_log = data_rank[time];
+                }
+            }
+            var score = data_final_log["score"];
+            var timeString = data_final_log["summaryTime"];
+            var startTime = config['startTime'];
+            var endTime = config['endTime'];
+            var totalTime = timeDiff(startTime, endTime);
+            var currentTime = timeDiff(startTime, timeString);
+            if (currentTime < totalTime) {
+                score = score * totalTime / currentTime;
+            }
+            code += `<td>${numberWithCommas(parseInt(score))}</td>\n`;
+        }
+        code += '</tr>\n';
+    }
+    code += '</table>\n';
+
+    document.getElementById("predict_table").innerHTML = code;
+};
+
+function buildRankingTable(time) {
+    var code = '';
+    code += '<tr>\n';
+    code += '<th>Idol</th>\n';
+    var key_ranks = config['key_ranks'];
+    var idols = config['idols'];  
+    for (let j = 0; j < key_ranks.length; j++) {
+        code += `<th>${key_ranks[j]}</th>\n`;
+    }
+    code += '</tr>\n';
+
+    var table_target = document.getElementById('main_table');
+    for (let i = 0; i < idols.length; i++) {
+        code += '<tr>\n';
+        code += `<td>${idolNames[i]}</td>\n`
+
+        var data_idol = data_all[i];
+        for (let j = 0; j < key_ranks.length; j++) {
+            var column_values = [];
+            for (let k = 0; k < idols.length; k++) {
+                var score = table_target.rows[k + 1].cells[j + 1].innerHTML;
+                score = numberRemoveCommas(score);
+                score = Number(score);
+                column_values.push(score);
+            }
+            var sorted_values = column_values.slice();
+            sorted_values.sort(function(a, b) { return a - b; });
+            code += `<td>${numberWithCommas(sorted_values.length - sorted_values.indexOf(column_values[i]))}</td>\n`;
+        }
+        code += '</tr>\n';
+    }
+    code += '</table>\n';
+
+    document.getElementById("ranking_table").innerHTML = code;
+};
+
+///////////////////////
 
 function parseTime(time) {
     // example data: "2021-04-20T15:00:00+09:00"
@@ -207,92 +339,6 @@ function timeDiff(start, end) {
 
 }
 
-
-function buildPredictionTable(time) {
-    var code = '';
-    code += '<tr>\n';
-    code += '<th>Idol</th>\n';
-    for (let j = 0; j < key_ranks.length; j++) {
-        code += `<th>${key_ranks[j]}</th>\n`;
-    }
-    code += '</tr>\n';
-
-    for (let i = 0; i < idols.length; i++) {
-        code += '<tr>\n';
-        code += `<td>${idolNames[i]}</td>\n`
-
-        var data_idol = data_all[i];
-        for (let j = 0; j < key_ranks.length; j++) {
-            var rank = key_ranks[j];
-            var data_rank = data_idol[rank];
-            var data_final_log;
-            if (time === -1) {
-                data_final_log = data_rank[data_rank.length - 1];
-            } else {
-                if (data_rank.length < numTimes) {
-                    var realTime = time - (numTimes - data_rank.length);
-                    if (realTime < 0) {
-                        data_final_log = data_rank[0];
-                    } else {
-                        data_final_log = data_rank[realTime];
-                    }
-                } else {
-                    data_final_log = data_rank[time];
-                }
-            }
-            var score = data_final_log["score"];
-            var timeString = data_final_log["summaryTime"];
-            var totalTime = timeDiff(startTime, endTime);
-            var currentTime = timeDiff(startTime, timeString);
-            if (currentTime < totalTime) {
-                score = score * totalTime / currentTime;
-            }
-            code += `<td>${numberWithCommas(parseInt(score))}</td>\n`;
-        }
-        code += '</tr>\n';
-    }
-    code += '</table>\n';
-
-    document.getElementById("predict_table").innerHTML = code;
-};
-
-function buildRankingTable(time) {
-    var code = '';
-    code += '<tr>\n';
-    code += '<th>Idol</th>\n';
-    for (let j = 0; j < key_ranks.length; j++) {
-        code += `<th>${key_ranks[j]}</th>\n`;
-    }
-    code += '</tr>\n';
-
-    var table_target = document.getElementById('main_table');
-    for (let i = 0; i < idols.length; i++) {
-        code += '<tr>\n';
-        code += `<td>${idolNames[i]}</td>\n`
-
-        var data_idol = data_all[i];
-        for (let j = 0; j < key_ranks.length; j++) {
-            var column_values = [];
-            for (let k = 0; k < idols.length; k++) {
-                var score = table_target.rows[k + 1].cells[j + 1].innerHTML;
-                score = numberRemoveCommas(score);
-                score = Number(score);
-                column_values.push(score);
-            }
-            var sorted_values = column_values.slice();
-            sorted_values.sort(function(a, b) { return a - b; });
-            code += `<td>${numberWithCommas(sorted_values.length - sorted_values.indexOf(column_values[i]))}</td>\n`;
-        }
-        code += '</tr>\n';
-    }
-    code += '</table>\n';
-
-    document.getElementById("ranking_table").innerHTML = code;
-};
-
 function setTimeText(time) {
     document.getElementById("timeText").innerHTML = `기록 시간: ${time}`;
 }
-
-
-
