@@ -25,6 +25,8 @@ idolNames = ["마노", "히오리", "메구루",
     "토오루", "마도카", "코이토", "히나나",
     "니치카", "미코토"
 ];
+eventIDs = [40005, 40006, 40007];
+
 num_idols = 25;
 idols = idols.slice(0, num_idols);
 idolNames = idolNames.slice(0, num_idols);
@@ -34,7 +36,42 @@ key_ranks = ["1", "10", "100", "1000", "3000"];
 eventId = 40007;
 data_all = {};
 startTime = "2021-10-12T15:00:00+09:00";
-endTime = "2021-10-20T12:00:00+09:00";
+endTime = "2021-10-18T12:00:00+09:00";
+
+$(document).ready(function(e) {
+    init();
+})
+
+async function init() {
+    var waitTime = 75;
+    await getAllData(waitTime);
+    // await sleep(waitTime * (num_idols) + 5000);
+    await sleep(1000);
+
+    buildEventIDSelector();
+    buildTimeSlider();
+
+    updateHTML(-1);
+
+    update();
+}
+
+function updateHTML(time) {
+    buildBasicTable(time);
+    buildPredictionTable(time);
+    buildRankingTable(time);
+}
+
+function update() {
+    var slider = document.getElementById("timeRange");
+    var sample_data = data_all[0][key_ranks[0]];
+    numTimes = sample_data.length;
+    slider.addEventListener("input", function() {
+        var time = sample_data[slider.value - 1]['summaryTime'];
+        setTimeText(time);
+        updateHTML(slider.value - 1);
+    })
+}
 
 function getDataAPI(eventId, characterId, ranks) {
     var xhttp = new XMLHttpRequest();
@@ -68,6 +105,21 @@ async function getAllData(waitTime) {
 }
 
 ///////////////////////
+
+function buildEventIDSelector() {
+    var select = document.getElementById('eventId_select');
+    for (let i=0; i<eventIDs.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = eventIDs[i];
+        opt.innerHTML = `${(eventIDs[i]-40000) / 2.}주년`;
+        select.appendChild(opt);
+    }
+   document.getElementById('eventId_select_button').addEventListener('click', async function(e) {
+       eventId = document.getElementById('eventId_select').selectedOptions[0].value;
+       await getAllData();
+       updateHTML(-1);
+   });
+}
 
 function buildBasicTable(time) {
     var code = '';
@@ -242,33 +294,5 @@ function setTimeText(time) {
     document.getElementById("timeText").innerHTML = `기록 시간: ${time}`;
 }
 
-function update() {
-    var slider = document.getElementById("timeRange");
-    var sample_data = data_all[0][key_ranks[0]];
-    numTimes = sample_data.length;
-    slider.addEventListener("input", function() {
-        var time = sample_data[slider.value - 1]['summaryTime'];
-        setTimeText(time);
-        buildBasicTable(slider.value - 1);
-        buildPredictionTable(slider.value - 1);
-        buildRankingTable(slider.value - 1);
-    })
-}
 
-async function all() {
-    var waitTime = 75;
-    getAllData(waitTime);
-    await sleep(waitTime * (num_idols) + 5000);
 
-    buildTimeSlider();
-
-    buildBasicTable(-1);
-    buildPredictionTable(-1);
-    buildRankingTable(-1);
-
-    update();
-}
-
-$(document).ready(function(e) {
-    all();
-})
