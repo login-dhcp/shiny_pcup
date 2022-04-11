@@ -16,7 +16,7 @@ function numberRemoveCommas(x) {
 
 idolNames = ["마노", "히오리", "메구루",
     "코가네", "마미미", "사쿠야", "유이카", "키리코",
-    "카호", "치요코",  "쥬리", "린제", "나츠하",
+    "카호", "치요코", "쥬리", "린제", "나츠하",
     "아마나", "텐카", "치유키",
     "아사히", "후유코", "메이",
     "토오루", "마도카", "코이토", "히나나",
@@ -51,13 +51,12 @@ configs = [{
     'key_ranks': ["1", "10", "100", "1000", "3000"],
     'startTime': "2022-04-11T15:00:00+09:00",
     'endTime': "2022-04-17T12:00:00+09:00",
-}
-]
+}]
 
 data_all = {};
-config = configs[configs.length-1];
+config = configs[configs.length - 1];
 
-$(document).ready(function(e) {
+$(document).ready(function (e) {
     init();
 })
 
@@ -88,11 +87,11 @@ async function update() {
     var time = sample_data[slider.value - 1]['summaryTime'];
     setTimeText(time);
 
-    updateHTML(slider.value-1);
+    updateHTML(slider.value - 1);
 }
 
 async function getAllData(waitTime) {
-    var idols = config['idols'];    
+    var idols = config['idols'];
     for (let i = 0; i < idols.length; i++) {
         await sleep(waitTime);
         var key_ranks_str = config['key_ranks'].join(',');
@@ -103,7 +102,7 @@ async function getAllData(waitTime) {
 function getDataAPI(eventId, characterId, ranks) {
     var xhttp = new XMLHttpRequest();
     var returnData = {};
-    xhttp.onreadystatechange = function() {
+    xhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
             var values = JSON.parse(this.responseText);
             for (let i = 0; i < values.length; i++) {
@@ -126,24 +125,24 @@ function getDataAPI(eventId, characterId, ranks) {
 
 function buildEventIDSelector() {
     var select = document.getElementById('eventID_select');
-    for (let i=0; i<configs.length; i++) {
+    for (let i = 0; i < configs.length; i++) {
         var _config = configs[i];
         var _eventID = _config['eventID'];
 
         var opt = document.createElement('option');
         opt.value = _eventID;
-        opt.innerHTML = `${(_eventID-40000) / 2.}주년`;
+        opt.innerHTML = `${(_eventID - 40000) / 2.}주년`;
         select.appendChild(opt);
     }
-    select.selectedIndex = configs.length-1;
+    select.selectedIndex = configs.length - 1;
 
-   document.getElementById('eventID_select_button').addEventListener('click', async function(e) {
-       var _config_index = document.getElementById('eventID_select').selectedIndex;
-       config = configs[_config_index];
-       await getAllData(waitTime);
-       update();
-       alert('finished!');
-   });
+    document.getElementById('eventID_select_button').addEventListener('click', async function (e) {
+        var _config_index = document.getElementById('eventID_select').selectedIndex;
+        config = configs[_config_index];
+        await getAllData(waitTime);
+        update();
+        alert('finished!');
+    });
 }
 
 function buildBasicTable(time) {
@@ -203,17 +202,17 @@ function buildBasicTable(time) {
 
 function buildTimeSlider() {
     var slider = document.getElementById("timeRange");
-    
+
     var key_ranks = config['key_ranks'];
     var sample_data = data_all[0][key_ranks[0]];
-    
+
     slider.max = sample_data.length;
     slider.value = sample_data.length;
 
     var time = sample_data[slider.value - 1]['summaryTime'];
     setTimeText(time);
 
-    slider.addEventListener("input", function() {
+    slider.addEventListener("input", function () {
         update();
     });
 }
@@ -224,7 +223,7 @@ function buildPredictionTable(time) {
     code += '<th>Idol</th>\n';
 
     var key_ranks = config['key_ranks'];
-    var idols = config['idols'];    
+    var idols = config['idols'];
     for (let j = 0; j < key_ranks.length; j++) {
         code += `<th>${key_ranks[j]}</th>\n`;
     }
@@ -279,7 +278,7 @@ function buildRankingTable(time) {
     code += '<tr>\n';
     code += '<th>Idol</th>\n';
     var key_ranks = config['key_ranks'];
-    var idols = config['idols'];  
+    var idols = config['idols'];
     for (let j = 0; j < key_ranks.length; j++) {
         code += `<th>${key_ranks[j]}</th>\n`;
     }
@@ -300,7 +299,7 @@ function buildRankingTable(time) {
                 column_values.push(score);
             }
             var sorted_values = column_values.slice();
-            sorted_values.sort(function(a, b) { return a - b; });
+            sorted_values.sort(function (a, b) { return a - b; });
             code += `<td>${numberWithCommas(sorted_values.length - sorted_values.indexOf(column_values[i]))}</td>\n`;
         }
         code += '</tr>\n';
