@@ -310,7 +310,7 @@ function applyColor() {
     $('#ranking_table tr > td').each(function(index) {
         var cell_rank = $(this).text();
         if (!isNaN(cell_rank)) {
-            var cell_color = Math.floor(cell_rank / Math.ceil(num_idols / rank_kinds));
+            var cell_color = Math.floor(cell_rank / Math.ceil(idolNames.length / rank_kinds));
             $(this).addClass("rank_"+cell_color);
         }
     });
