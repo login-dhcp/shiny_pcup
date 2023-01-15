@@ -161,3 +161,27 @@ table#ranking_table td {
     width: 50px;
     text-align: center;
 }
+
+.rank_0 {
+    background-color: #73bffa;
+}
+
+.rank_1 {
+    background-color: #a4f76a;
+    color: #306f1d;
+}
+
+.rank_2 {
+    background-color: #fdf171;
+    color: #e2792e;
+}
+
+.rank_3 {
+    background-color: #f19b91;
+    color: #a62a17;
+}
+
+.table_header {
+    background-color: #f2f2f2;
+    color: #e99035;
+}

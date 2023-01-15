@@ -14,6 +14,8 @@ function numberRemoveCommas(x) {
   return x.toString().replace(/,*/g, "");
 }
 
+rank_kinds = 4;
+
 idolNames = [
   "마노",
   "히오리",
@@ -304,6 +306,19 @@ function buildPredictionTable(time) {
   document.getElementById("predict_table").innerHTML = code;
 }
 
+function applyColor() {
+    $('#ranking_table tr > td').each(function(index) {
+        var cell_rank = $(this).text();
+        if (!isNaN(cell_rank)) {
+            var cell_color = Math.floor(cell_rank / Math.ceil(num_idols / rank_kinds));
+            $(this).addClass("rank_"+cell_color);
+        }
+    });
+    $('#ranking_table tr > th').each(function(index) {
+        $(this).addClass("table_header");
+    });
+};
+
 function buildRankingTable(time) {
   var code = "";
   code += "<tr>\n";
@@ -342,6 +357,8 @@ function buildRankingTable(time) {
   code += "</table>\n";
 
   document.getElementById("ranking_table").innerHTML = code;
+
+  applyColor();
 }
 
 ///////////////////////
