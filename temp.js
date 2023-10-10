@@ -89,6 +89,13 @@ configs = [
     startTime: "2023-04-12T15:00:00+09:00",
     endTime: "2023-04-16T12:00:00+09:00",
   },
+  {
+    eventID: 40011,
+    idols: range(26, 1),
+    key_ranks: ["1", "10", "100", "1000", "3000"],
+    startTime: "2023-10-10T15:00:00+09:00",
+    endTime: "2023-10-17T12:00:00+09:00",
+  },
 ];
 
 data_all = {};
@@ -251,6 +258,16 @@ function buildTimeSlider() {
   slider.value = sample_data.length;
 
   var time = sample_data[slider.value - 1]["summaryTime"];
+//  var init_time = config[startTime];
+//  var init_time_vals = parseTime(init_time);
+//  if (slider.value-1%2==1) {
+//     if (init_time_vals["mm"]=="0") init_time_vals["mm"] = "30";
+//     else init_time_vals["mm"] = "0";
+//  }
+//  init_time_vals["hh"] = (Number(init_time_vals["hh"]) + (slider.value-1) / 2) % 24
+//  init_time_vals["hh"] = ("0"+init_time_vals["hh"]).slice(-2) //%02d
+//  init_time_vals["DD"] =
+//  var time = init_time + 30min * slider.value-1
   setTimeText(time);
 
   slider.addEventListener("input", function () {
@@ -387,6 +404,14 @@ function parseTime(time) {
   values["utc_mm"] = time.slice(24, 26);
 
   return values;
+}
+
+function parsedToTime(values) {
+  var timeString = `${values["YYYY"]}-${values["MM"]}-${values["DD"]}
+  T${values["hh"]}:${values["mm"]}:${values["ss"]}
+  ${values["utc"]}${values["utc_hh"]}${values["utc_mm"]}`;
+
+  return timeString;
 }
 
 function timeDiff(start, end) {
