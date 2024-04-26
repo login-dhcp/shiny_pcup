@@ -250,7 +250,7 @@ function buildBasicTable(time) {
       }
 
       // 최종 데이터에 내용이 없을 경우 처리
-      if ("score" in data_final_log) {
+      if (undefined !== data_final_log && "score" in data_final_log) {
         code += `<td>${numberWithCommas(data_final_log["score"])}</td>\n`;
       }
       else {
