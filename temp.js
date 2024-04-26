@@ -254,6 +254,7 @@ function buildBasicTable(time) {
         code += `<td>${numberWithCommas(data_final_log["score"])}</td>\n`;
       }
       else {
+        data_final_log = {"score": 1, "timeString": time};
         code += `<td>${numberWithCommas(1)}</td>\n`;
       }
     }
