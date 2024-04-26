@@ -251,7 +251,7 @@ function buildBasicTable(time) {
 
       // 최종 데이터에 내용이 없을 경우 처리
       if (data_final_log === undefined) {
-        data_final_log = {"score": 1, "timeString": time};
+        data_final_log = {"score": 1, "summaryTime": time};
       }
       code += `<td>${numberWithCommas(data_final_log["score"])}</td>\n`;
     }
@@ -328,7 +328,7 @@ function buildPredictionTable(time) {
         }
       }
       if (data_final_log === undefined) {
-        data_final_log = {"score": 1, "timeString": startTime};
+        data_final_log = {"score": 1, "summaryTime": startTime};
       }
       var score = data_final_log["score"];
       var timeString = data_final_log["summaryTime"];
