@@ -328,7 +328,7 @@ function buildPredictionTable(time) {
         }
       }
       if (data_final_log === undefined) {
-        data_final_log = {"score": 1, "summaryTime": startTime};
+        data_final_log = {"score": 1, "summaryTime": endTime};
       }
       var score = data_final_log["score"];
       var timeString = data_final_log["summaryTime"];
