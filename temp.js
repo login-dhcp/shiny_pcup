@@ -114,6 +114,10 @@ $(document).ready(function (e) {
   init();
 });
 
+async function alertFinished() {
+  alert("Finished!");
+}
+
 async function init() {
   buildEventIDSelector();
 
@@ -124,7 +128,7 @@ async function init() {
   buildTimeSlider();
 
   await update();
-  alert("finished!");
+  await alertFinished();
 }
 
 function updateHTML(time) {
@@ -198,9 +202,29 @@ function buildEventIDSelector() {
       config = configs[_config_index];
       await getAllData(waitTime);
       update();
-      alert("finished!");
+      await alertFinished();
     });
 }
+
+
+function buildTimeSlider() {
+  var slider = document.getElementById("timeRange");
+  var key_ranks = config["key_ranks"];
+  var sample_data = data_all[0][key_ranks[0]];
+
+  slider.max = sample_data.length;
+  slider.value = sample_data.length;
+
+  var time = sample_data[sample_data.length - 1]["summaryTime"];
+  setTimeText(time);
+
+  slider.addEventListener("input", function () {
+    update();
+  });
+}
+
+////////////////////////////
+// build main tables
 
 function buildBasicTable(time) {
   var code = "";
@@ -262,33 +286,6 @@ function buildBasicTable(time) {
   document.getElementById("main_table").innerHTML = code;
 }
 
-function buildTimeSlider() {
-  var slider = document.getElementById("timeRange");
-
-  var key_ranks = config["key_ranks"];
-  var sample_data = data_all[0][key_ranks[0]];
-
-  slider.max = sample_data.length;
-  slider.value = sample_data.length;
-
-  var time = sample_data[slider.value - 1]["summaryTime"];
-//  var init_time = config[startTime];
-//  var init_time_vals = parseTime(init_time);
-//  if (slider.value-1%2==1) {
-//     if (init_time_vals["mm"]=="0") init_time_vals["mm"] = "30";
-//     else init_time_vals["mm"] = "0";
-//  }
-//  init_time_vals["hh"] = (Number(init_time_vals["hh"]) + (slider.value-1) / 2) % 24
-//  init_time_vals["hh"] = ("0"+init_time_vals["hh"]).slice(-2) //%02d
-//  init_time_vals["DD"] =
-//  var time = init_time + 30min * slider.value-1
-  setTimeText(time);
-
-  slider.addEventListener("input", function () {
-    update();
-  });
-}
-
 function buildPredictionTable(time) {
   var code = "";
   code += "<tr>\n";
@@ -348,19 +345,6 @@ function buildPredictionTable(time) {
   document.getElementById("predict_table").innerHTML = code;
 }
 
-function applyColor() {
-    $('#ranking_table tr > td').each(function(index) {
-        var cell_rank = $(this).text();
-        if (!isNaN(cell_rank)) {
-            var cell_color = Math.floor(cell_rank / Math.ceil(idolNames.length / rank_kinds));
-            $(this).addClass("rank_"+cell_color);
-        }
-    });
-    $('#ranking_table tr > th').each(function(index) {
-        $(this).addClass("table_header");
-    });
-};
-
 function buildRankingTable(time) {
   var code = "";
   code += "<tr>\n";
@@ -404,6 +388,19 @@ function buildRankingTable(time) {
 }
 
 ///////////////////////
+// util functions
+function applyColor() {
+    $('#ranking_table tr > td').each(function(index) {
+        var cell_rank = $(this).text();
+        if (!isNaN(cell_rank)) {
+            var cell_color = Math.floor(cell_rank / Math.ceil(idolNames.length / rank_kinds));
+            $(this).addClass("rank_"+cell_color);
+        }
+    });
+    $('#ranking_table tr > th').each(function(index) {
+        $(this).addClass("table_header");
+    });
+};
 
 function parseTime(time) {
   // example data: "2021-04-20T15:00:00+09:00"
