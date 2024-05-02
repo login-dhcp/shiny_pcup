@@ -110,6 +110,8 @@ configs = [
 data_all = {};
 config = configs[configs.length - 1];
 
+//////////
+
 $(document).ready(function (e) {
   init();
 });
@@ -122,29 +124,23 @@ async function init() {
   buildEventIDSelector();
 
   await getAllData(waitTime);
-  // await sleep(waitTime * (num_idols) + 5000);
   await sleep(1000);
 
-  buildTimeSlider();
+  await buildTimeSlider();
 
   await update();
   await alertFinished();
 }
 
-function updateHTML(time) {
-  buildBasicTable(time);
-  buildPredictionTable(time);
-  buildRankingTable(time);
+async function updateHTML(time) {
+  await buildBasicTable(time);
+  await buildPredictionTable(time);
+  await buildRankingTable(time);
 }
 
 async function update() {
+  await updateTimeSliderText();
   var slider = document.getElementById("timeRange");
-  var key_ranks = config["key_ranks"];
-
-  var sample_data = data_all[0][key_ranks[0]];
-  var time = sample_data[slider.value - 1]["summaryTime"];
-  setTimeText(time);
-
   updateHTML(slider.value - 1);
 }
 
@@ -201,32 +197,44 @@ function buildEventIDSelector() {
         document.getElementById("eventID_select").selectedIndex;
       config = configs[_config_index];
       await getAllData(waitTime);
-      update();
+      await resetTimeSlider();
+      await update();
       await alertFinished();
     });
 }
 
+async function updateTimeSliderText() {
+  var slider = document.getElementById("timeRange");
+  var key_ranks = config["key_ranks"];
 
-function buildTimeSlider() {
+  var sample_data = data_all[0][key_ranks[0]];
+  var time = sample_data[slider.value - 1]["summaryTime"];
+  setTimeText(time);
+}
+
+async function resetTimeSlider() {
   var slider = document.getElementById("timeRange");
   var key_ranks = config["key_ranks"];
   var sample_data = data_all[0][key_ranks[0]];
-
   slider.max = sample_data.length;
   slider.value = sample_data.length;
 
-  var time = sample_data[sample_data.length - 1]["summaryTime"];
-  setTimeText(time);
+  await updateTimeSliderText();
+}
 
-  slider.addEventListener("input", function () {
-    update();
+async function buildTimeSlider() {
+  await resetTimeSlider();
+
+  var slider = document.getElementById("timeRange");
+  slider.addEventListener("input", async function () {
+    await update();
   });
 }
 
 ////////////////////////////
 // build main tables
 
-function buildBasicTable(time) {
+async function buildBasicTable(time) {
   var code = "";
   code += "<tr>\n";
   code += "<th>Idol</th>\n";
@@ -286,7 +294,7 @@ function buildBasicTable(time) {
   document.getElementById("main_table").innerHTML = code;
 }
 
-function buildPredictionTable(time) {
+async function buildPredictionTable(time) {
   var code = "";
   code += "<tr>\n";
   code += "<th>Idol</th>\n";
@@ -345,7 +353,7 @@ function buildPredictionTable(time) {
   document.getElementById("predict_table").innerHTML = code;
 }
 
-function buildRankingTable(time) {
+async function buildRankingTable(time) {
   var code = "";
   code += "<tr>\n";
   code += "<th>Idol</th>\n";
