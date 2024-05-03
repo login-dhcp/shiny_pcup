@@ -108,6 +108,7 @@ configs = [
 ];
 
 data_all = {};
+data_all_all = {};
 config = configs[configs.length - 1];
 
 //////////
@@ -123,7 +124,7 @@ async function alertFinished() {
 async function init() {
   buildEventIDSelector();
 
-  await getAllData(waitTime);
+  await getAllData(configs.length-1, waitTime);
   await sleep(1000);
 
   await buildTimeSlider();
@@ -144,16 +145,20 @@ async function update() {
   updateHTML(slider.value - 1);
 }
 
-async function getAllData(waitTime) {
-  var idols = config["idols"];
-  for (let i = 0; i < idols.length; i++) {
-    await sleep(waitTime);
-    var key_ranks_str = config["key_ranks"].join(",");
-    getDataAPI(config["eventID"], i + 1, key_ranks_str);
+async function getAllData(key, waitTime) {
+  if (!(key in data_all_all)) {
+    data_all_all[key] = {};
+    var idols = config["idols"];
+    for (let i = 0; i < idols.length; i++) {
+      await sleep(waitTime);
+      var key_ranks_str = config["key_ranks"].join(",");
+      await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
+    }
   }
+  data_all = data_all_all[key];
 }
 
-function getDataAPI(eventId, characterId, ranks) {
+async function getDataAPI(eventId, characterId, ranks, key) {
   var xhttp = new XMLHttpRequest();
   var returnData = {};
   xhttp.onreadystatechange = function () {
@@ -171,7 +176,7 @@ function getDataAPI(eventId, characterId, ranks) {
   xhttp.setRequestHeader("Content-type", "text/plain");
   xhttp.send();
 
-  data_all[characterId - 1] = returnData;
+  data_all_all[key][characterId - 1] = returnData;
   return returnData;
 }
 
@@ -196,7 +201,7 @@ function buildEventIDSelector() {
       var _config_index =
         document.getElementById("eventID_select").selectedIndex;
       config = configs[_config_index];
-      await getAllData(waitTime);
+      await getAllData(_config_index, waitTime);
       await resetTimeSlider();
       await update();
       await alertFinished();
