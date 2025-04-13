@@ -106,13 +106,13 @@ configs = [
     endTime: "2024-04-29T12:00:00+09:00",
   },
 // Remove eventID 40013 since we don't have data at source.
-  {
-    eventID: 40013,
-    idols: range(28, 1),
-    key_ranks: ["1", "10", "100", "1000", "3000"],
-    startTime: "2024-10-12T15:00:00+09:00",
-    endTime: "2024-10-14T12:00:00+09:00",
-  },
+//  {
+//    eventID: 40013,
+//    idols: range(28, 1),
+//    key_ranks: ["1", "10", "100", "1000", "3000"],
+//    startTime: "2024-10-12T15:00:00+09:00",
+//    endTime: "2024-10-14T12:00:00+09:00",
+//  },
   {
     eventID: 40014,
     idols: range(28, 1),
@@ -123,7 +123,7 @@ configs = [
 ];
 
 data_all_all = {};
-config = configs[configs.length - 1];
+config = configs[configs.length - 1];  // current config. Initially the latest event.
 
 //////////
 
@@ -165,7 +165,7 @@ async function getDataAPICached(eventID) {
   xhttp.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       var response = JSON.parse(this.responseText);
-      for (const [characterId, result_per_eventID_characterId] of Object.entries(response)) {
+      for (const [characterID, result_per_eventID_characterId] of Object.entries(response)) {
         var returnData_per_eventID_characterID = {};
         for (let i=0; i<result_per_eventID_characterId.length; i++) {
           var result_per_eventID_characterId_rank = result_per_eventID_characterId[i];
@@ -178,7 +178,7 @@ async function getDataAPICached(eventID) {
           }
           returnData_per_eventID_characterID[result_per_eventID_characterId_rank["rank"]] = result_per_eventID_characterId_rank["data"];
         }
-        returnData[characterId - 1] = returnData_per_eventID_characterID;
+        returnData[characterID - 1] = returnData_per_eventID_characterID;
       }
     }
   };
@@ -211,7 +211,7 @@ async function getAllData(waitTime) {
   }
 }
 
-async function getDataAPI(eventID, characterId, ranks, key) {
+async function getDataAPI(eventID, characterID, ranks, key) {
   var xhttp = new XMLHttpRequest();
   var returnData = {};
   xhttp.onreadystatechange = function () {
@@ -231,16 +231,16 @@ async function getDataAPI(eventID, characterId, ranks, key) {
   };
 
   if (eventID === configs[configs.length-1]["eventID"]) {
-    var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventID}/rankings/logs/${characterId}/${ranks}`;
+    var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventID}/rankings/logs/${characterID}/${ranks}`;
   }
   else {
-    var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventID}/${characterId}/${ranks}.json`;
+    var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventID}/${characterID}/${ranks}.json`;
   }
   xhttp.open("GET", url, false);
   xhttp.setRequestHeader("Content-type", "text/plain");
   xhttp.send();
 
-  data_all_all[eventID][characterId - 1] = returnData;
+  data_all_all[eventID][characterID - 1] = returnData;
   return returnData;
 }
 
@@ -314,7 +314,6 @@ async function buildBasicTable(time) {
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
   var eventID = config["eventID"];
-  var key = (eventID - 40005);
 
   // 1. 각 열 추가
   for (let j = 0; j < key_ranks.length; j++) {
