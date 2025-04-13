@@ -122,8 +122,6 @@ configs = [
   }
 ];
 
-// Stores data per event_id. `Character_id(s)` X `ranks` X `(score, timestamp)`
-data_all = {};
 data_all_all = {};
 config = configs[configs.length - 1];
 
@@ -243,7 +241,6 @@ async function getAllData(waitTime) {
 //      await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
 //    }
   }
-  data_all = data_all_all[eventID];
 }
 
 async function getDataAPI(eventID, characterId, ranks, key) {
@@ -310,8 +307,9 @@ function buildEventIDSelector() {
 async function updateTimeSliderText() {
   var slider = document.getElementById("timeRange");
   var key_ranks = config["key_ranks"];
+  var eventID = config["eventID"];
 
-  var sample_data = data_all[0][key_ranks[0]];
+  var sample_data = data_all_all[eventID][0][key_ranks[0]];
   var time = sample_data[slider.value - 1]["summaryTime"];
   setTimeText(time);
 }
@@ -319,7 +317,9 @@ async function updateTimeSliderText() {
 async function resetTimeSlider() {
   var slider = document.getElementById("timeRange");
   var key_ranks = config["key_ranks"];
-  var sample_data = data_all[0][key_ranks[0]];
+  var eventID = config["eventID"];
+
+  var sample_data = data_all_all[eventID][0][key_ranks[0]];
   slider.max = sample_data.length;
   slider.value = sample_data.length;
 
@@ -468,6 +468,8 @@ async function buildRankingTable(time) {
   code += "<th>Idol</th>\n";
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
+  var eventID = config["eventID"];
+
   for (let j = 0; j < key_ranks.length; j++) {
     code += `<th>${key_ranks[j]}</th>\n`;
   }
@@ -478,7 +480,7 @@ async function buildRankingTable(time) {
     code += "<tr>\n";
     code += `<td>${idolNames[i]}</td>\n`;
 
-    var data_idol = data_all[i];
+    var data_idol = data_all_all[eventID][i];
     for (let j = 0; j < key_ranks.length; j++) {
       var column_values = [];
       for (let k = 0; k < idols.length; k++) {
