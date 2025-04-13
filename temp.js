@@ -186,6 +186,12 @@ async function getDataAPI(eventId, characterId, ranks, key) {
       var values = JSON.parse(this.responseText);
       for (let i = 0; i < values.length; i++) {
         var value = values[i];
+        for (let j=0; j<value["data"].length; j++) {
+            let ms = 1000 * 60 * 30;  // round to nearest 30 min
+            let originalDate = Date.parse(value["data"][j]["summaryTime"]);
+            let roundedDate = new Date(Math.round(originalDate / ms) * ms);
+            value["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+        }
         returnData[value["rank"]] = value["data"];
       }
     }
