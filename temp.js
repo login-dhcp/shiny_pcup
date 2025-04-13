@@ -140,7 +140,7 @@ async function alertFinished() {
 async function init() {
   buildEventIDSelector();
 
-  await getAllData(configs.length-1, waitTime);
+  await getAllData(waitTime);
 //  await getAllDataCached();
   await sleep(1000);
 
@@ -192,10 +192,10 @@ async function getAllDataCached() {
   return returnData;
 }
 
-async function getDataAPICached(eventId, key) {
+async function getDataAPICached(eventID) {
   var xhttp = new XMLHttpRequest();
   var returnData = {};
-//  returnData[eventId] = {};
+//  returnData[eventID] = {};
   xhttp.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       var response = JSON.parse(this.responseText);
@@ -217,20 +217,21 @@ async function getDataAPICached(eventId, key) {
     }
   };
 
-  var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventId}/rank.json`;
+  var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventID}/rank.json`;
   xhttp.open("GET", url, false);
   xhttp.setRequestHeader("Content-type", "text/plain");
   xhttp.send();
 
-  data_all_all[key] = returnData;
+  data_all_all[eventID] = returnData;
   return returnData;
 }
 
-async function getAllData(key, waitTime) {
-  if (!(key in data_all_all)) {
-    data_all_all[key] = {};
+async function getAllData(waitTime) {
+  var eventID = config["eventID"];
+  if (!(eventID in data_all_all)) {
     var idols = config["idols"];
-    getDataAPICached(config["eventID"], key);
+    getDataAPICached(eventID);
+//    data_all_all[eventID] = {};
 //    for (let i = 0; i < idols.length; i++) {
 //      if (config["eventID"] === configs[configs.length-1]["eventID"]) {
 //        await sleep(waitTime);
@@ -242,10 +243,10 @@ async function getAllData(key, waitTime) {
 //      await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
 //    }
   }
-  data_all = data_all_all[key];
+  data_all = data_all_all[eventID];
 }
 
-async function getDataAPI(eventId, characterId, ranks, key) {
+async function getDataAPI(eventID, characterId, ranks, key) {
   var xhttp = new XMLHttpRequest();
   var returnData = {};
   xhttp.onreadystatechange = function () {
@@ -264,17 +265,17 @@ async function getDataAPI(eventId, characterId, ranks, key) {
     }
   };
 
-  if (eventId === configs[configs.length-1]["eventID"]) {
-    var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventId}/rankings/logs/${characterId}/${ranks}`;
+  if (eventID === configs[configs.length-1]["eventID"]) {
+    var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventID}/rankings/logs/${characterId}/${ranks}`;
   }
   else {
-    var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventId}/${characterId}/${ranks}.json`;
+    var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventID}/${characterId}/${ranks}.json`;
   }
   xhttp.open("GET", url, false);
   xhttp.setRequestHeader("Content-type", "text/plain");
   xhttp.send();
 
-  data_all_all[key][characterId - 1] = returnData;
+  data_all_all[eventID][characterId - 1] = returnData;
   return returnData;
 }
 
@@ -359,13 +360,13 @@ async function buildBasicTable(time) {
     code += `<td>${idolNames[i]}</td>\n`;
 
     // 2. 아이돌별 데이터 추가
-    var data_idol = data_all_all[key][i];
+    var data_idol = data_all_all[eventID][i];
     for (let j = 0; j < key_ranks.length; j++) {
       var rank = key_ranks[j];
       var data_rank = data_idol[rank];
       var data_final_log;
 
-      var sample_data = data_all_all[key][0][key_ranks[0]];
+      var sample_data = data_all_all[eventID][0][key_ranks[0]];
       var numTimes = sample_data.length;
 
       // 2.1. 시간대별 데이터 추가
@@ -418,13 +419,13 @@ async function buildPredictionTable(time) {
     code += "<tr>\n";
     code += `<td>${idolNames[i]}</td>\n`;
 
-    var data_idol = data_all_all[key][i];
+    var data_idol = data_all_all[eventID][i];
     for (let j = 0; j < key_ranks.length; j++) {
       var rank = key_ranks[j];
       var data_rank = data_idol[rank];
       var data_final_log;
 
-      var sample_data = data_all_all[key][0][key_ranks[0]];
+      var sample_data = data_all_all[eventID][0][key_ranks[0]];
       var numTimes = sample_data.length;
       if (time === -1) {
         data_final_log = data_rank[data_rank.length - 1];
