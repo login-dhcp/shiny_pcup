@@ -174,7 +174,7 @@ async function getAllDataCached() {
             let ms = 1000 * 60 * 30;  // round to nearest 30 min
             let originalDate = Date.parse(value["data"][j]["summaryTime"]);
             let roundedDate = new Date(Math.round(originalDate / ms) * ms);
-            value["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+            value["data"][j]["summaryTime"] = roundedDate;
         }
         returnData[value["rank"]] = value["data"];
       }
@@ -208,12 +208,10 @@ async function getDataAPICached(eventId, key) {
             let ms = 1000 * 60 * 30;  // round to nearest 30 min
             let originalDate = Date.parse(result_per_eventID_characterId_rank["data"][j]["summaryTime"]);
             let roundedDate = new Date(Math.round(originalDate / ms) * ms);
-//            result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate.toLocaleString();
             result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate;
           }
           returnData_per_eventID_characterID[result_per_eventID_characterId_rank["rank"]] = result_per_eventID_characterId_rank["data"];
         }
-//        returnData[eventId][characterId] = result_per_eventID_characterId;
         returnData[characterId - 1] = returnData_per_eventID_characterID;
       }
     }
@@ -259,7 +257,7 @@ async function getDataAPI(eventId, characterId, ranks, key) {
             let ms = 1000 * 60 * 30;  // round to nearest 30 min
             let originalDate = Date.parse(value["data"][j]["summaryTime"]);
             let roundedDate = new Date(Math.round(originalDate / ms) * ms);
-            value["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+            value["data"][j]["summaryTime"] = roundedDate;
         }
         returnData[value["rank"]] = value["data"];
       }
@@ -520,36 +518,11 @@ function applyColor() {
     });
 };
 
-function parseTime(time) {
-  // example data: "2021-04-20T15:00:00+09:00"
-  var values = {};
-  values["YYYY"] = time.slice(0, 4);
-  values["MM"] = time.slice(5, 7);
-  values["DD"] = time.slice(8, 10);
-
-  values["hh"] = time.slice(11, 13);
-  values["mm"] = time.slice(14, 16);
-  values["ss"] = time.slice(17, 19);
-
-  values["utc"] = time.slice(19, 20);
-  values["utc_hh"] = time.slice(20, 22);
-  values["utc_mm"] = time.slice(24, 26);
-
-  return values;
-}
-
-function parsedToTime(values) {
-  var timeString = `${values["YYYY"]}-${values["MM"]}-${values["DD"]}
-  T${values["hh"]}:${values["mm"]}:${values["ss"]}
-  ${values["utc"]}${values["utc_hh"]}${values["utc_mm"]}`;
-
-  return timeString;
-}
-
 function timeDiff(start, end) {
   return (Date.parse(end) - Date.parse(start)) / 1000 / 60 / 60;
 }
 
 function setTimeText(time) {
-  document.getElementById("timeText").innerHTML = `기록 시간: ${time}`;
+  var localeTime = time.toLocaleString();
+  document.getElementById("timeText").innerHTML = `기록 시간: ${localeTime}`;
 }
