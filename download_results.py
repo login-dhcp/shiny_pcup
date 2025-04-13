@@ -51,9 +51,9 @@ def merge_results_per_event(event_id: int):
     output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
     if os.path.exists(output_path):
       with open(output_path, 'r', encoding='utf-8') as f:
-        results_event[character_id-1] = json.load(f)
+        results_event[character_id] = json.load(f)
     else:
-      results_event[character_id-1] = {}
+      results_event[character_id] = {}
 
   output_path = f"./results/{event_id}/rank.json"
   with open(output_path, 'w', encoding='utf-8') as f:
@@ -69,9 +69,9 @@ def merge_results():
       output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
       if os.path.exists(output_path):
         with open(output_path, 'r', encoding='utf-8') as f:
-          results_all[event_id][character_id-1] = json.load(f)
+          results_all[event_id][character_id] = json.load(f)
       else:
-        results_all[event_id][character_id-1] = {}
+        results_all[event_id][character_id] = {}
 
   output_path = f"./results/rank.json"
   with open(output_path, 'w', encoding='utf-8') as f:
