@@ -22,6 +22,7 @@ uri_formats = {
   DataSource.MATSURIHIME.name: "https://api.matsurihi.me/sc/v1/events/fanRanking/{eventId}/rankings/logs/{characterId}/{ranks}",
   DataSource.CHIYOKO.name: "https://api.chiyoko.cc/sc/v1/events/fanRanking/{eventId}/rankings/logs/{characterId}/{ranks}",
 }
+BASE_DIR = os.path.dirname(__file__)
 
 
 def fetch_and_save(data_source: str, event_id: int, character_id: int, ranks: str):
@@ -32,7 +33,7 @@ def fetch_and_save(data_source: str, event_id: int, character_id: int, ranks: st
   )
   logging.info(uri)
 
-  output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
+  output_path = f"{BASE_DIR}/results/{event_id}/{character_id}/{ranks}.json"
   os.makedirs(os.path.dirname(output_path), exist_ok=True)
   try:
     data = requests.get(uri).text
@@ -48,14 +49,14 @@ def merge_results_per_event(event_id: int):
   ranks = ",".join(map(str, KEY_RANKS))
   results_event = {}
   for character_id in CHARACTER_IDS:
-    output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
+    output_path = f"{BASE_DIR}/results/{event_id}/{character_id}/{ranks}.json"
     if os.path.exists(output_path):
       with open(output_path, 'r', encoding='utf-8') as f:
         results_event[character_id] = json.load(f)
     else:
       results_event[character_id] = {}
 
-  output_path = f"./results/{event_id}/rank.json"
+  output_path = f"{BASE_DIR}/results/{event_id}/rank.json"
   with open(output_path, 'w', encoding='utf-8') as f:
     json.dump(results_event, f, indent=4)
 
@@ -66,14 +67,14 @@ def merge_results():
   for event_id in EVENT_IDS:
     results_all[event_id] = {}
     for character_id in CHARACTER_IDS:
-      output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
+      output_path = f"{BASE_DIR}/results/{event_id}/{character_id}/{ranks}.json"
       if os.path.exists(output_path):
         with open(output_path, 'r', encoding='utf-8') as f:
           results_all[event_id][character_id] = json.load(f)
       else:
         results_all[event_id][character_id] = {}
 
-  output_path = f"./results/rank.json"
+  output_path = f"{BASE_DIR}/results/rank.json"
   with open(output_path, 'w', encoding='utf-8') as f:
     json.dump(results_all, f, indent=4)
 
@@ -84,7 +85,9 @@ def main(args):
     ranks = ",".join(map(str, KEY_RANKS))
     fetch_and_save(args.data_source, event_id, character_id, ranks)
     time.sleep(1)
+  logging.info(f'merging results of {event_id}')
   merge_results_per_event(event_id)
+  logging.info('success')
 
 
 def parse_args():
