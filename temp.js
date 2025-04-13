@@ -290,8 +290,8 @@ async function resetTimeSlider() {
   var sample_data = data_all_all[eventID][0][key_ranks[0]];
   slider.max = sample_data.length;
   slider.value = sample_data.length;
-
-  await updateTimeSliderText();
+  var time = sample_data[slider.value - 1]["summaryTime"];
+  setTimeText(time);
 }
 
 async function buildTimeSlider() {
@@ -334,27 +334,23 @@ async function buildBasicTable(time) {
       var data_final_log;
 
       var sample_data = data_all_all[eventID][0][key_ranks[0]];
-      var numTimes = sample_data.length;
+      var reference_length = sample_data.length;
 
-      // 2.1. 시간대별 데이터 추가
-      // time이 -1일 경우 최종데이터
-      // time이 index로 주어질 경우 실제 시간 계산해서 사용 TODO
-      if (time === -1) {
-        data_final_log = data_rank[data_rank.length - 1];
-      } else {
-        if (data_rank.length < numTimes) {
-          var realTime = time - (numTimes - data_rank.length);
-          if (realTime < 0) {
-            data_final_log = data_rank[0];
-          } else {
-            data_final_log = data_rank[realTime];
-          }
+      // 2.1. 시간별 데이터 추가
+      // 3천위 데이터는 sample_data보다 짧을 수 있음
+      if (data_rank.length < reference_length) {
+        // 그 경우 -n번째 data끼리 timestamp가 동일하다 가정.
+        var realTime = time - (reference_length - data_rank.length);
+        if (realTime < 0) {
+          data_final_log = data_rank[0];
         } else {
-          data_final_log = data_rank[time];
+          data_final_log = data_rank[realTime];
         }
+      } else {
+        data_final_log = data_rank[time];
       }
 
-      // 최종 데이터에 내용이 없을 경우 처리
+      // 데이터에 내용이 없을 경우
       if (data_final_log === undefined) {
         data_final_log = {"score": 1, "summaryTime": time};
       }
@@ -375,7 +371,6 @@ async function buildPredictionTable(time) {
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
   var eventID = config["eventID"];
-  var key = (eventID - 40005);
 
   for (let j = 0; j < key_ranks.length; j++) {
     code += `<th>${key_ranks[j]}</th>\n`;
@@ -393,21 +388,22 @@ async function buildPredictionTable(time) {
       var data_final_log;
 
       var sample_data = data_all_all[eventID][0][key_ranks[0]];
-      var numTimes = sample_data.length;
-      if (time === -1) {
-        data_final_log = data_rank[data_rank.length - 1];
-      } else {
-        if (data_rank.length < numTimes) {
-          var realTime = time - (numTimes - data_rank.length);
-          if (realTime < 0) {
-            data_final_log = data_rank[0];
-          } else {
-            data_final_log = data_rank[realTime];
-          }
+      var reference_length = sample_data.length;
+      // 2.1. 시간별 데이터 추가
+      // 3천위 데이터는 sample_data보다 짧을 수 있음
+      if (data_rank.length < reference_length) {
+        // 그 경우 -n번째 data끼리 timestamp가 동일하다 가정.
+        var realTime = time - (reference_length - data_rank.length);
+        if (realTime < 0) {
+          data_final_log = data_rank[0];
         } else {
-          data_final_log = data_rank[time];
+          data_final_log = data_rank[realTime];
         }
+      } else {
+        data_final_log = data_rank[time];
       }
+
+      // 데이터에 내용이 없을 경우
       if (data_final_log === undefined) {
         data_final_log = {"score": 1, "summaryTime": endTime};
       }
