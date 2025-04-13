@@ -105,13 +105,14 @@ configs = [
     startTime: "2024-04-26T15:00:00+09:00",
     endTime: "2024-04-29T12:00:00+09:00",
   },
-  {
-    eventID: 40013,
-    idols: range(28, 1),
-    key_ranks: ["1", "10", "100", "1000", "3000"],
-    startTime: "2024-10-12T15:00:00+09:00",
-    endTime: "2024-10-14T12:00:00+09:00",
-  },
+// Remove eventID 40013 since we don't have data at source.
+//  {
+//    eventID: 40013,
+//    idols: range(28, 1),
+//    key_ranks: ["1", "10", "100", "1000", "3000"],
+//    startTime: "2024-10-12T15:00:00+09:00",
+//    endTime: "2024-10-14T12:00:00+09:00",
+//  },
   {
     eventID: 40014,
     idols: range(28, 1),
