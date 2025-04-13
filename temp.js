@@ -122,6 +122,7 @@ configs = [
   }
 ];
 
+// Stores data per event_id. `Character_id(s)` X `ranks` X `(score, timestamp)`
 data_all = {};
 data_all_all = {};
 config = configs[configs.length - 1];
@@ -140,6 +141,7 @@ async function init() {
   buildEventIDSelector();
 
   await getAllData(configs.length-1, waitTime);
+//  await getAllDataCached();
   await sleep(1000);
 
   await buildTimeSlider();
@@ -160,20 +162,86 @@ async function update() {
   updateHTML(slider.value - 1);
 }
 
+async function getAllDataCached() {
+    var xhttp = new XMLHttpRequest();
+    var returnData = {};
+    xhttp.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      var values = JSON.parse(this.responseText);
+      for (let i = 0; i < values.length; i++) {
+        var value = values[i];
+        for (let j=0; j<value["data"].length; j++) {
+            let ms = 1000 * 60 * 30;  // round to nearest 30 min
+            let originalDate = Date.parse(value["data"][j]["summaryTime"]);
+            let roundedDate = new Date(Math.round(originalDate / ms) * ms);
+            value["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+        }
+        returnData[value["rank"]] = value["data"];
+      }
+    }
+  };
+
+  var url = `https://shinycolors.info/utils/shiny_pcup/results/rank.json`;
+  xhttp.open("GET", url, false);
+  xhttp.setRequestHeader("Content-type", "text/plain");
+  xhttp.send();
+
+//  data_all_all[key][characterId - 1] = returnData;
+//  return returnData;
+  data_all_all = returnData;
+  return returnData;
+}
+
+async function getDataAPICached(eventId, key) {
+  var xhttp = new XMLHttpRequest();
+  var returnData = {};
+//  returnData[eventId] = {};
+  xhttp.onreadystatechange = function () {
+    if (this.readyState === 4 && this.status === 200) {
+      var response = JSON.parse(this.responseText);
+      for (const [characterId, result_per_eventID_characterId] of Object.entries(response)) {
+        var returnData_per_eventID_characterID = {};
+        for (let i=0; i<result_per_eventID_characterId.length; i++) {
+          var result_per_eventID_characterId_rank = result_per_eventID_characterId[i];
+          // loop through data
+          for (let j=0; j<result_per_eventID_characterId_rank["data"].length; j++) {
+            let ms = 1000 * 60 * 30;  // round to nearest 30 min
+            let originalDate = Date.parse(result_per_eventID_characterId_rank["data"][j]["summaryTime"]);
+            let roundedDate = new Date(Math.round(originalDate / ms) * ms);
+            result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+          }
+          returnData_per_eventID_characterID[result_per_eventID_characterId_rank["rank"]] = result_per_eventID_characterId_rank["data"];
+        }
+//        returnData[eventId][characterId] = result_per_eventID_characterId;
+        returnData[characterId - 1] = returnData_per_eventID_characterID;
+      }
+    }
+  };
+
+  var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventId}/rank.json`;
+  xhttp.open("GET", url, false);
+  xhttp.setRequestHeader("Content-type", "text/plain");
+  xhttp.send();
+
+  data_all_all[key] = returnData;
+  return returnData;
+}
+
 async function getAllData(key, waitTime) {
   if (!(key in data_all_all)) {
     data_all_all[key] = {};
     var idols = config["idols"];
-    for (let i = 0; i < idols.length; i++) {
-      if (config["eventID"] === configs[configs.length-1]["eventID"]) {
-        await sleep(waitTime);
-      }
-      else {  // sleep less for cached result in shinycolors.info
-        await sleep(100);
-      }
-      var key_ranks_str = config["key_ranks"].join(",");
-      await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
-    }
+    getDataAPICached(config["eventID"], key);
+//    for (let i = 0; i < idols.length; i++) {
+//      if (config["eventID"] === configs[configs.length-1]["eventID"]) {
+//        await sleep(waitTime);
+//      }
+//      else {  // sleep less for cached result in shinycolors.info
+//        await sleep(100);
+//      }
+//      var key_ranks_str = config["key_ranks"].join(",");
+//      await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
+//    }
   }
   data_all = data_all_all[key];
 }
