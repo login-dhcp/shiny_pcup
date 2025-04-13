@@ -139,7 +139,6 @@ async function init() {
   buildEventIDSelector();
 
   await getAllData(waitTime);
-//  await getAllDataCached();
   await sleep(1000);
 
   await buildTimeSlider();
@@ -160,40 +159,9 @@ async function update() {
   updateHTML(slider.value - 1);
 }
 
-async function getAllDataCached() {
-    var xhttp = new XMLHttpRequest();
-    var returnData = {};
-    xhttp.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      var values = JSON.parse(this.responseText);
-      for (let i = 0; i < values.length; i++) {
-        var value = values[i];
-        for (let j=0; j<value["data"].length; j++) {
-            let ms = 1000 * 60 * 30;  // round to nearest 30 min
-            let originalDate = Date.parse(value["data"][j]["summaryTime"]);
-            let roundedDate = new Date(Math.round(originalDate / ms) * ms);
-            value["data"][j]["summaryTime"] = roundedDate;
-        }
-        returnData[value["rank"]] = value["data"];
-      }
-    }
-  };
-
-  var url = `https://shinycolors.info/utils/shiny_pcup/results/rank.json`;
-  xhttp.open("GET", url, false);
-  xhttp.setRequestHeader("Content-type", "text/plain");
-  xhttp.send();
-
-//  data_all_all[key][characterId - 1] = returnData;
-//  return returnData;
-  data_all_all = returnData;
-  return returnData;
-}
-
 async function getDataAPICached(eventID) {
   var xhttp = new XMLHttpRequest();
   var returnData = {};
-//  returnData[eventID] = {};
   xhttp.onreadystatechange = function () {
     if (this.readyState === 4 && this.status === 200) {
       var response = JSON.parse(this.responseText);
