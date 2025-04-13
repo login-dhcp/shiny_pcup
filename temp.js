@@ -106,13 +106,13 @@ configs = [
     endTime: "2024-04-29T12:00:00+09:00",
   },
 // Remove eventID 40013 since we don't have data at source.
-//  {
-//    eventID: 40013,
-//    idols: range(28, 1),
-//    key_ranks: ["1", "10", "100", "1000", "3000"],
-//    startTime: "2024-10-12T15:00:00+09:00",
-//    endTime: "2024-10-14T12:00:00+09:00",
-//  },
+  {
+    eventID: 40013,
+    idols: range(28, 1),
+    key_ranks: ["1", "10", "100", "1000", "3000"],
+    startTime: "2024-10-12T15:00:00+09:00",
+    endTime: "2024-10-14T12:00:00+09:00",
+  },
   {
     eventID: 40014,
     idols: range(28, 1),
@@ -208,7 +208,8 @@ async function getDataAPICached(eventId, key) {
             let ms = 1000 * 60 * 30;  // round to nearest 30 min
             let originalDate = Date.parse(result_per_eventID_characterId_rank["data"][j]["summaryTime"]);
             let roundedDate = new Date(Math.round(originalDate / ms) * ms);
-            result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+//            result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate.toLocaleString();
+            result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate;
           }
           returnData_per_eventID_characterID[result_per_eventID_characterId_rank["rank"]] = result_per_eventID_characterId_rank["data"];
         }
@@ -345,6 +346,8 @@ async function buildBasicTable(time) {
 
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
+  var eventID = config["eventID"];
+  var key = (eventID - 40005);
 
   // 1. 각 열 추가
   for (let j = 0; j < key_ranks.length; j++) {
@@ -358,13 +361,13 @@ async function buildBasicTable(time) {
     code += `<td>${idolNames[i]}</td>\n`;
 
     // 2. 아이돌별 데이터 추가
-    var data_idol = data_all[i];
+    var data_idol = data_all_all[key][i];
     for (let j = 0; j < key_ranks.length; j++) {
       var rank = key_ranks[j];
       var data_rank = data_idol[rank];
       var data_final_log;
 
-      var sample_data = data_all[0][key_ranks[0]];
+      var sample_data = data_all_all[key][0][key_ranks[0]];
       var numTimes = sample_data.length;
 
       // 2.1. 시간대별 데이터 추가
@@ -405,6 +408,9 @@ async function buildPredictionTable(time) {
 
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
+  var eventID = config["eventID"];
+  var key = (eventID - 40005);
+
   for (let j = 0; j < key_ranks.length; j++) {
     code += `<th>${key_ranks[j]}</th>\n`;
   }
@@ -414,13 +420,13 @@ async function buildPredictionTable(time) {
     code += "<tr>\n";
     code += `<td>${idolNames[i]}</td>\n`;
 
-    var data_idol = data_all[i];
+    var data_idol = data_all_all[key][i];
     for (let j = 0; j < key_ranks.length; j++) {
       var rank = key_ranks[j];
       var data_rank = data_idol[rank];
       var data_final_log;
 
-      var sample_data = data_all[0][key_ranks[0]];
+      var sample_data = data_all_all[key][0][key_ranks[0]];
       var numTimes = sample_data.length;
       if (time === -1) {
         data_final_log = data_rank[data_rank.length - 1];
@@ -541,20 +547,7 @@ function parsedToTime(values) {
 }
 
 function timeDiff(start, end) {
-  // time2 > time1
-  // startTime="2021-04-20T15:00:00+09:00";
-  // endTime="2021-04-20T12:00:00+09:00";
-
-  // TODO need to change this code in case of event longer than a month
-  // TODO if different utc is given...
-  var parsedStart = parseTime(start);
-  var parsedCurrnet = parseTime(end);
-
-  var diffHour =
-    Number(parsedCurrnet["DD"] - parsedStart["DD"]) * 24 +
-    Number(parsedCurrnet["hh"] - parsedStart["hh"]) +
-    Number(parsedCurrnet["mm"] - parsedStart["mm"]) / 60;
-  return diffHour;
+  return (Date.parse(end) - Date.parse(start)) / 1000 / 60 / 60;
 }
 
 function setTimeText(time) {
