@@ -185,7 +185,12 @@ async function getDataAPI(eventId, characterId, ranks, key) {
     }
   };
 
-  var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventId}/rankings/logs/${characterId}/${ranks}`;
+  if (eventId === configs[configs.length-1]["eventID"]) {
+    var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventId}/rankings/logs/${characterId}/${ranks}`;
+  }
+  else {
+    var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventId}/rankings/logs/${characterId}/${ranks}`;
+  }
   xhttp.open("GET", url, false);
   xhttp.setRequestHeader("Content-type", "text/plain");
   xhttp.send();
