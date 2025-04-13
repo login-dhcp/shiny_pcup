@@ -44,6 +44,24 @@ def fetch_and_save(data_source: str, event_id: int, character_id: int, ranks: st
     logging.error(f"error {e} on get {uri}")
 
 
+def merge_results():
+  ranks = ",".join(map(str, KEY_RANKS))
+  results_all = {}
+  for event_id in EVENT_IDS:
+    results_all[event_id] = {}
+    for character_id in CHARACTER_IDS:
+      output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
+      if os.path.exists(output_path):
+        with open(output_path, 'r', encoding='utf-8') as f:
+          results_all[event_id][character_id] = json.load(f)
+      else:
+        results_all[event_id][character_id] = {}
+
+  output_path = f"./results/rank.json"
+  with open(output_path, 'w', encoding='utf-8') as f:
+    json.dump(results_all, f, indent=4)
+
+
 def main(args):
   event_id = args.event_id
   for character_id in CHARACTER_IDS:
