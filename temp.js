@@ -164,7 +164,12 @@ async function getAllData(key, waitTime) {
     data_all_all[key] = {};
     var idols = config["idols"];
     for (let i = 0; i < idols.length; i++) {
-      await sleep(waitTime);
+      if (confnig["eventID"] === configs[configs.length-1]["eventID"]) {
+        await sleep(waitTime);
+      }
+      else {  // sleep less for cached result in shinycolors.info
+        await sleep(100);
+      }
       var key_ranks_str = config["key_ranks"].join(",");
       await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
     }
