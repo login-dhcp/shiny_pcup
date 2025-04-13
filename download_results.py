@@ -10,19 +10,20 @@ import time
 
 EVENT_IDS = list(range(40007, 40014+1))
 CHARACTER_IDS = list(range(1, 28+1))  # TODO old events don't have 28 chars
-KEY_RANKS = list(range(1, 11)) + [10, 100, 1000, 3000]
+# KEY_RANKS = list(range(1, 11)) + [10, 100, 1000, 3000]
+KEY_RANKS = [1, 10, 100, 1000, 3000]
 uri_format = "https://api.matsurihi.me/sc/v1/events/fanRanking/{eventId}/rankings/logs/{characterId}/{ranks}"
 
 
-def fetch_and_save(event_id: int, character_id: int, rank: int):
+def fetch_and_save(event_id: int, character_id: int, ranks: str):
   uri = uri_format.format(
     eventId=event_id,
     characterId=character_id,
-    ranks=rank
+    ranks=ranks
   )
   logging.info(uri)
 
-  output_path = f"./results/{event_id}/{character_id}/{rank}.json"
+  output_path = f"./results/{event_id}/{character_id}/{ranks}.json"
   os.makedirs(os.path.dirname(output_path), exist_ok=True)
   try:
     data = requests.get(uri).text
@@ -35,11 +36,11 @@ def fetch_and_save(event_id: int, character_id: int, rank: int):
 
 
 def main(args):
-  event_id = args.eventID
+  event_id = args.event_id
   for character_id in CHARACTER_IDS:
-    for rank in KEY_RANKS:
-      fetch_and_save(event_id, character_id, rank)
-      time.sleep(1)
+    ranks = ",".join(map(str, KEY_RANKS))
+    fetch_and_save(event_id, character_id, ranks)
+    time.sleep(1)
 
 
 def parse_args():
