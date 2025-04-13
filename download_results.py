@@ -84,6 +84,7 @@ def main(args):
     ranks = ",".join(map(str, KEY_RANKS))
     fetch_and_save(args.data_source, event_id, character_id, ranks)
     time.sleep(1)
+  merge_results_per_event(event_id)
 
 
 def parse_args():
