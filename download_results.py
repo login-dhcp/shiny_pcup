@@ -1,6 +1,7 @@
 """
 Simple script to download results and use them as a cache.
 """
+import argparse
 import json
 import logging
 import os
@@ -33,14 +34,22 @@ def fetch_and_save(event_id: int, character_id: int, rank: int):
     logging.error(f"error {e} on get {uri}")
 
 
-def main():
-  for event_id in EVENT_IDS:
-    for character_id in CHARACTER_IDS:
-      for rank in KEY_RANKS:
-        fetch_and_save(event_id, character_id, rank)
-        time.sleep(1)
+def main(args):
+  event_id = args.eventID
+  for character_id in CHARACTER_IDS:
+    for rank in KEY_RANKS:
+      fetch_and_save(event_id, character_id, rank)
+      time.sleep(1)
 
+
+def parse_args():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--event_id', type=int, required=True)
+
+  args = parser.parse_args()
+  return args
 
 if __name__ == '__main__':
   logging.basicConfig(level=logging.INFO)
-  main()
+  args = parse_args()
+  main(args)
