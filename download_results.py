@@ -14,7 +14,7 @@ class DataSource(enum.Enum):
   CHIYOKO = 1
 
 
-EVENT_IDS = list(range(40007, 40014+1))
+EVENT_IDS = list(range(40007, 40016+1))
 CHARACTER_IDS = list(range(1, 28+1))  # TODO old events don't have 28 chars
 # KEY_RANKS = list(range(1, 11)) + [10, 100, 1000, 3000]
 KEY_RANKS = [1, 10, 100, 1000, 3000]
