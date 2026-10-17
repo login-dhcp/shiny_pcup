@@ -147,10 +147,11 @@ configs = [
 data_all_all = {};
 config = configs[configs.length - 1];  // current config. Initially the latest event.
 var currentLanguage = "ko";
-var previousEventEstimateEnabled = false;
+var previousEventEstimateEnabled = true;
 var previousEstimateConfig = null;
-var logScaleEnabled = true;
+var logScaleEnabled = false;
 var rankTrendEnabled = false;
+var trendPanelVisibility = {};
 var englishIdolNames = [
   "Mano", "Hiori", "Meguru", "Kogane", "Mamimi", "Sakuya", "Yuika", "Kiriko",
   "Kaho", "Chiyoko", "Juri", "Rinze", "Natsuha", "Amana", "Tenka", "Chiyuki",
@@ -168,7 +169,7 @@ var translations = {
     helpLine2: "이벤트를 고른 뒤 이벤트 보기를 누르고, 표 아래 슬라이더로 기록 시점을 이동하세요.",
     helpLine3: "데이터 로딩에 몇 초 걸릴 수 있습니다. 오래 기다려도 표시되지 않으면 새로고침해 주세요.",
     chartSectionLabel: "점수 추이 차트", chartEyebrow: "SCORE TRENDS", chartTitle: "아이돌 점수 추이와 종료 예상",
-    chartRank: "순위 구간", chartNote: "실선은 기록된 점수, 점선은 이벤트 종료 시점 예상 점수입니다.",
+    chartRank: "순위 구간", chartNote: "각 순위 구간은 별도 축을 사용합니다. 점선은 2시간 간격 종료 예상입니다.",
     resultsLabel: "아이돌 랭킹 결과", rankingOverview: "RANKING OVERVIEW", resultsTitle: "아이돌별 랭킹",
     scrollNote: "표를 좌우로 움직여 모든 순위를 확인할 수 있어요.", currentScores: "현재 점수",
     selectedTime: "선택한 시점의 기록", forecast: "종료 예상", forecastSubtitle: "현재 추세 기준 예상 점수",
@@ -178,7 +179,7 @@ var translations = {
     dataSource: "랭킹 데이터 제공", author: "제작", recordedAt: "기록 시간", noData: "선택한 이벤트의 기록 데이터가 없습니다.",
     noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각 (UTC+9)", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
     finishedToast: "완료되었습니다.",
-    languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위",
+    languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위", trendVisible: "표시", trendHidden: "숨김", showTrend: "추이 표시", hideTrend: "추이 숨기기",
     eventNotStarted: "아직 시작하지 않은 이벤트입니다.",
     previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
     loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
@@ -209,7 +210,7 @@ var translations = {
     helpLine2: "Choose an event, select View event, then use a table slider to browse its history.",
     helpLine3: "Loading can take a few seconds. Refresh if the data does not appear.",
     chartSectionLabel: "Score trend chart", chartEyebrow: "SCORE TRENDS", chartTitle: "Idol score trends and end estimates",
-    chartRank: "Rank tier", chartNote: "Solid lines show recorded scores; dotted lines show projections to event end.",
+    chartRank: "Rank tier", chartNote: "Each rank tier has its own scale. Dotted lines show estimates at two-hour intervals.",
     resultsLabel: "Idol ranking results", rankingOverview: "RANKING OVERVIEW", resultsTitle: "Rankings by idol",
     scrollNote: "Scroll horizontally inside a table to see every rank.", currentScores: "Current scores",
     selectedTime: "Scores at selected time", forecast: "End estimate", forecastSubtitle: "Projected from the current trend",
@@ -219,7 +220,7 @@ var translations = {
     dataSource: "Ranking data", author: "Made by", recordedAt: "Recorded", noData: "No ranking data is available for the selected event.",
     noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp (UTC+9)", chartY: "Fan count", chartLoading: "Loading chart data",
     finishedToast: "Finished!",
-    languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank",
+    languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank", trendVisible: "Shown", trendHidden: "Hidden", showTrend: "Show trend", hideTrend: "Hide trend",
     eventNotStarted: "This event has not started yet.",
     previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
     loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
@@ -464,6 +465,9 @@ async function init() {
 
   await buildTimeSlider();
   initializeTrendControls();
+  previousEstimateConfig = await loadPreviousEventEstimateConfig();
+  if (!previousEstimateConfig) previousEventEstimateEnabled = false;
+  updateEstimateModeButton();
   update();
   showFinishedToast();
 }
@@ -612,11 +616,12 @@ function buildEventIDSelector() {
       var _config_index =
         document.getElementById("eventID_select").selectedIndex;
       if (!configs[_config_index] || Date.parse(configs[_config_index].startTime) > Date.now()) return;
-      previousEventEstimateEnabled = false;
-      previousEstimateConfig = null;
-      updateEstimateModeButton();
+      var keepPreviousEventEstimate = previousEventEstimateEnabled;
       config = configs[_config_index];
       await getAllData(_config_index, waitTime);
+      previousEstimateConfig = keepPreviousEventEstimate ? await loadPreviousEventEstimateConfig() : null;
+      previousEventEstimateEnabled = keepPreviousEventEstimate && Boolean(previousEstimateConfig);
+      updateEstimateModeButton();
       initializeTrendControls();
       await resetTimeSlider();
       await update();
@@ -723,6 +728,71 @@ function estimateEndScore(score, timestamp, idolIndex, rank) {
   return Number(score) * totalHours / elapsedHours;
 }
 
+function getPreviousScoreAtProgress(progress, idolIndex, rank) {
+  if (!previousEventEstimateEnabled || !previousEstimateConfig) return null;
+  var previousData = data_all_all[previousEstimateConfig.eventID];
+  var previousRankData = previousData && previousData[idolIndex] && previousData[idolIndex][rank];
+  var previousTotalHours = timeDiff(previousEstimateConfig.startTime, previousEstimateConfig.endTime);
+  if (!Array.isArray(previousRankData) || !previousRankData.length || !Number.isFinite(previousTotalHours) || previousTotalHours <= 0) return null;
+  var targetTime = Date.parse(previousEstimateConfig.startTime) + previousTotalHours * Math.max(0, Math.min(1, progress)) * 3600000;
+  var validLogs = previousRankData.filter(function (log) { return Number(log.score) > 0 && Number.isFinite(Date.parse(log.summaryTime)); });
+  if (!validLogs.length) return null;
+  var nearest = validLogs.reduce(function (closest, log) {
+    return Math.abs(Date.parse(log.summaryTime) - targetTime) < Math.abs(Date.parse(closest.summaryTime) - targetTime) ? log : closest;
+  }, validLogs[0]);
+  return Number(nearest.score);
+}
+
+function estimateTrendScoreAt(score, currentTimestamp, targetTimestamp, idolIndex, rank) {
+  var currentElapsed = timeDiff(config.startTime, currentTimestamp);
+  var targetElapsed = timeDiff(config.startTime, targetTimestamp);
+  if (!Number.isFinite(currentElapsed) || currentElapsed <= 0 || !Number.isFinite(targetElapsed) || targetElapsed <= currentElapsed) return Number(score);
+  var totalHours = timeDiff(config.startTime, config.endTime);
+  if (previousEventEstimateEnabled && totalHours > 0) {
+    var currentPreviousScore = getPreviousScoreAtProgress(currentElapsed / totalHours, idolIndex, rank);
+    var targetPreviousScore = getPreviousScoreAtProgress(targetElapsed / totalHours, idolIndex, rank);
+    if (currentPreviousScore > 0 && targetPreviousScore >= currentPreviousScore) {
+      return Number(score) * targetPreviousScore / currentPreviousScore;
+    }
+  }
+  return Number(score) * targetElapsed / currentElapsed;
+}
+
+function formatKoreanScoreTick(value) {
+  var absoluteValue = Math.abs(value);
+  var numberFormat = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
+  if (absoluteValue >= 100000000) return `${numberFormat.format(value / 100000000)}억`;
+  if (absoluteValue >= 10000) return `${numberFormat.format(value / 10000)}만`;
+  return new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(value);
+}
+
+function getKoreanScoreAxisTicks(values, isLogScale) {
+  if (currentLanguage !== "ko") return {};
+  var finiteValues = values.filter(function (value) { return Number.isFinite(value) && value > 0; });
+  if (!finiteValues.length) return {};
+  var minValue = Math.min.apply(null, finiteValues);
+  var maxValue = Math.max.apply(null, finiteValues);
+  var tickvals = [];
+  if (isLogScale) {
+    var minExponent = Math.floor(Math.log10(minValue));
+    var maxExponent = Math.ceil(Math.log10(maxValue));
+    var exponentStep = Math.max(1, Math.ceil((maxExponent - minExponent + 1) / 7));
+    for (var exponent = minExponent; exponent <= maxExponent; exponent += exponentStep) tickvals.push(Math.pow(10, exponent));
+  } else {
+    var span = maxValue - minValue;
+    var roughStep = span > 0 ? span / 5 : maxValue / 5;
+    if (!Number.isFinite(roughStep) || roughStep <= 0) return {};
+    var magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    var normalizedStep = roughStep / magnitude;
+    var niceFactor = normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10;
+    var step = niceFactor * magnitude;
+    for (var tick = Math.ceil(minValue / step) * step; tick <= maxValue && tickvals.length < 8; tick += step) tickvals.push(tick);
+    if (tickvals.length < 2 && minValue !== maxValue) tickvals.push(maxValue);
+  }
+  if (!tickvals.length) tickvals.push(minValue);
+  return { tickmode: "array", tickvals: tickvals, ticktext: tickvals.map(formatKoreanScoreTick) };
+}
+
 async function togglePreviousEventEstimate() {
   var button = document.getElementById("estimateModeToggle");
   if (previousEventEstimateEnabled) {
@@ -731,22 +801,9 @@ async function togglePreviousEventEstimate() {
     update();
     return;
   }
-  var currentIndex = configs.indexOf(config);
   button.disabled = true;
   document.getElementById("estimateModeToggleLabel").textContent = t("loadingPreviousEvent");
-  for (var i = currentIndex - 1; i >= 0; i--) {
-    var candidate = configs[i];
-    if (!data_all_all[candidate.eventID]) {
-      var activeConfig = config;
-      config = candidate;
-      await getAllData();
-      config = activeConfig;
-    }
-    if (hasRankingData(candidate)) {
-      previousEstimateConfig = candidate;
-      break;
-    }
-  }
+  previousEstimateConfig = await loadPreviousEventEstimateConfig(currentIndex);
   button.disabled = false;
   if (previousEstimateConfig) {
     previousEventEstimateEnabled = true;
@@ -755,6 +812,20 @@ async function togglePreviousEventEstimate() {
   }
   updateEstimateModeButton();
   update();
+}
+
+async function loadPreviousEventEstimateConfig(currentIndex = configs.indexOf(config)) {
+  for (var i = currentIndex - 1; i >= 0; i--) {
+    var candidate = configs[i];
+    if (!data_all_all[candidate.eventID]) {
+      var activeConfig = config;
+      config = candidate;
+      await getAllData();
+      config = activeConfig;
+    }
+    if (hasRankingData(candidate)) return candidate;
+  }
+  return null;
 }
 
 function updateEstimateModeButton() {
@@ -774,19 +845,16 @@ function updateTrendChart() {
   if (!window.Plotly) return;
   var note = document.querySelector(".chart-note");
   if (note) note.textContent = t(rankTrendEnabled ? "rankTrendNote" : "chartNote");
-  var chartElement = document.getElementById("trendChart");
+  var chartContainer = document.getElementById("trendChart");
   var eventWindow = [toPlotlyDate(config.startTime), toPlotlyDate(config.endTime)];
   var eventStartTimestamp = Date.parse(eventWindow[0]);
   var eventEndTimestamp = Date.parse(eventWindow[1]);
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
+  Array.from(chartContainer.children).forEach(function (panel) { Plotly.purge(panel.querySelector(".trend-plot")); });
+  chartContainer.replaceChildren();
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
-    Plotly.react(chartElement, [], {
-      autosize: true,
-      margin: { t: 15, r: 20, b: 50, l: 65 },
-      annotations: [{ text: t("noData"), showarrow: false, x: 0.5, y: 0.5, xref: "paper", yref: "paper" }],
-      xaxis: { visible: false }, yaxis: { visible: false },
-    }, { responsive: true, displaylogo: false });
+    chartContainer.textContent = t("noData");
     return;
   }
 
@@ -799,13 +867,14 @@ function updateTrendChart() {
   var timeIndex = referenceLength - 1;
   var selectedPoint = sampleData[timeIndex];
   var cutoff = Math.min(Date.parse(selectedPoint.summaryTime), eventEndTimestamp);
-  var palette = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#ff9da7", "#9c755f", "#bab0ab", "#6f4e7c", "#2f7f9d", "#cc6677", "#447744", "#aa4499", "#ddaa33", "#6699cc", "#884400", "#117755", "#882255", "#888844", "#44aa99", "#9955bb", "#cc6677", "#669944", "#ee7733", "#4477aa", "#aa3377"];
-  var traces = [];
+  var palette = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1"];
 
   var idolName = getIdolName(idolIndex);
-  if (rankTrendEnabled) {
-    for (var rankTrendIndex = 0; rankTrendIndex < config.key_ranks.length; rankTrendIndex++) {
-      var tier = config.key_ranks[rankTrendIndex];
+  config.key_ranks.forEach(function (tier, tierIndex) {
+    var tierTraces = [];
+    var color = palette[tierIndex % palette.length];
+    var seriesName = `${t("rankLabel")} ${tier}`;
+    if (rankTrendEnabled) {
       var rankX = [];
       var rankY = [];
       for (var rankTime = 0; rankTime <= timeIndex; rankTime++) {
@@ -827,91 +896,121 @@ function updateTrendChart() {
         if (previousRankPoint >= 0 && Date.parse(rankX[previousRankPoint]) === selectedRankTime) rankY[previousRankPoint] = targetRank;
         else { rankX.push(selectedRankLog.summaryTime); rankY.push(targetRank); }
       }
-      if (!rankX.length) continue;
-      var rankSeriesName = `${t("rankLabel")} ${tier}`;
-      traces.push({
-        type: "scatter", mode: "lines", name: rankSeriesName, x: rankX.map(toPlotlyDate), y: rankY,
-        customdata: rankX.map(function (value) { return formatTokyoTimestamp(value); }),
-        line: { color: palette[rankTrendIndex % palette.length], width: 2 },
-        hovertemplate: `${idolName} · ${rankSeriesName}<br>%{customdata}<br>#%{y}<extra></extra>`,
-      });
-    }
-    chartElement._tokyoAxisTimes = traces.flatMap(function (trace) { return trace.x; });
-    Plotly.react(chartElement, traces, {
-      autosize: true, height: 590,
-      margin: { t: 18, r: 24, b: 65, l: 78 },
-      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-      font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
-      hovermode: "closest", uirevision: `${config.eventID}-${config.startTime}-${config.endTime}-${idolIndex}-rank`,
-      xaxis: { title: { text: t("chartX") }, type: "date", range: eventWindow, autorange: false, fixedrange: true, gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes, eventWindow[0], eventWindow[1]) },
-      yaxis: { title: { text: t("idolRank") }, type: logScaleEnabled ? "log" : "linear", autorange: "reversed", dtick: logScaleEnabled ? undefined : 1, gridcolor: "#eceaf0", zeroline: false },
-      legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
-    }, { responsive: true, displaylogo: false }).then(function () {
-      return Plotly.relayout(chartElement, {
-        "xaxis.range": eventWindow,
-        "xaxis.autorange": false,
-        "xaxis.fixedrange": true,
-      });
-    });
-    return;
-  }
-  for (var rankIndex = 0; rankIndex < config.key_ranks.length; rankIndex++) {
-    var rank = config.key_ranks[rankIndex];
-    var rankData = idolData && idolData[rank];
-    if (!Array.isArray(rankData) || rankData.length === 0) continue;
-
-    var trendX = [];
-    var trendY = [];
-    for (var time = 0; time <= timeIndex; time++) {
-      var log = getRankLogAtTime(rankData, time, referenceLength);
-      var logTime = log && Date.parse(log.summaryTime);
-      if (!log || !Number.isFinite(logTime) || logTime < eventStartTimestamp || logTime > eventEndTimestamp || logTime > cutoff) continue;
-      var previous = trendX.length - 1;
-      if (previous >= 0 && Date.parse(trendX[previous]) === logTime) {
-        trendY[previous] = Number(log.score);
-      } else {
-        trendX.push(log.summaryTime);
-        trendY.push(Number(log.score));
+      if (rankX.length) {
+        tierTraces.push({
+          type: "scatter", mode: "lines", name: seriesName, x: rankX.map(toPlotlyDate), y: rankY,
+          customdata: rankX.map(function (value) { return formatTokyoTimestamp(value); }),
+          line: { color: color, width: 2 },
+          hovertemplate: `${idolName} · ${seriesName}<br>%{customdata}<br>#%{y}<extra></extra>`,
+        });
+      }
+    } else {
+      var rankData = idolData && idolData[tier];
+      var trendX = [];
+      var trendY = [];
+      for (var time = 0; time <= timeIndex; time++) {
+        var log = getRankLogAtTime(rankData, time, referenceLength);
+        var logTime = log && Date.parse(log.summaryTime);
+        if (!log || !Number.isFinite(logTime) || logTime < eventStartTimestamp || logTime > eventEndTimestamp || logTime > cutoff) continue;
+        var previous = trendX.length - 1;
+        if (previous >= 0 && Date.parse(trendX[previous]) === logTime) trendY[previous] = Number(log.score);
+        else { trendX.push(log.summaryTime); trendY.push(Number(log.score)); }
+      }
+      if (trendX.length) {
+        var currentLog = { summaryTime: trendX[trendX.length - 1], score: trendY[trendY.length - 1] };
+        tierTraces.push({
+          type: "scatter", mode: "lines", name: seriesName,
+          x: trendX.map(toPlotlyDate), y: trendY,
+          customdata: trendX.map(function (value) { return formatTokyoTimestamp(value); }),
+          line: { color: color, width: 2 },
+          hovertemplate: `${idolName} · ${seriesName}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
+        });
+        var forecastTimes = [Date.parse(currentLog.summaryTime)];
+        var forecastInterval = 2 * 60 * 60 * 1000;
+        for (var forecastTime = forecastTimes[0] + forecastInterval; forecastTime < eventEndTimestamp; forecastTime += forecastInterval) forecastTimes.push(forecastTime);
+        if (eventEndTimestamp > forecastTimes[forecastTimes.length - 1]) forecastTimes.push(eventEndTimestamp);
+        var forecastScores = forecastTimes.map(function (forecastTimestamp) {
+          return estimateTrendScoreAt(currentLog.score, currentLog.summaryTime, new Date(forecastTimestamp).toISOString(), idolIndex, tier);
+        });
+        tierTraces.push({
+          type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
+          x: forecastTimes.map(function (value) { return new Date(value).toISOString(); }), y: forecastScores,
+          customdata: forecastTimes.map(function (value) { return formatTokyoTimestamp(value); }),
+          line: { color: color, width: 1.5, dash: "dot" },
+          marker: { color: color, size: 5, symbol: "diamond" },
+          hovertemplate: `${idolName} · ${seriesName} · ${t("forecast")}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
+        });
       }
     }
 
-    if (trendX.length === 0) continue;
-    var currentLog = { summaryTime: trendX[trendX.length - 1], score: trendY[trendY.length - 1] };
-    var color = palette[rankIndex % palette.length];
-    var seriesName = `${t("rankLabel")} ${rank}`;
-    traces.push({
-      type: "scatter", mode: "lines", name: seriesName, legendgroup: seriesName,
-      x: trendX.map(toPlotlyDate), y: trendY, customdata: trendX.map(function (value) { return formatTokyoTimestamp(value); }), line: { color: color, width: 2 },
-      hovertemplate: `${idolName} · ${seriesName}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
+    var panel = document.createElement("article");
+    panel.className = "trend-panel";
+    var heading = document.createElement("div");
+    heading.className = "trend-panel-heading";
+    var isVisible = trendPanelVisibility[tier] !== false;
+    var collapseToggle = document.createElement("button");
+    collapseToggle.className = "trend-collapse-toggle";
+    collapseToggle.type = "button";
+    collapseToggle.setAttribute("aria-expanded", String(isVisible));
+    var title = document.createElement("h3");
+    title.id = `trend-title-${tier}`;
+    title.textContent = seriesName;
+    collapseToggle.setAttribute("aria-controls", `trend-plot-${tier}`);
+    collapseToggle.setAttribute("aria-label", `${seriesName}: ${t(isVisible ? "hideTrend" : "showTrend")}`);
+    var triangle = document.createElement("span");
+    triangle.className = "trend-collapse-mark";
+    triangle.setAttribute("aria-hidden", "true");
+    triangle.textContent = "▸";
+    collapseToggle.appendChild(triangle);
+    var subtitle = document.createElement("span");
+    subtitle.textContent = t(rankTrendEnabled ? "idolRank" : "chartY");
+    var titleGroup = document.createElement("div");
+    titleGroup.className = "trend-panel-title-group";
+    titleGroup.append(collapseToggle, title, subtitle);
+    heading.appendChild(titleGroup);
+    var plot = document.createElement("div");
+    plot.className = "trend-plot";
+    plot.id = `trend-plot-${tier}`;
+    plot.setAttribute("role", "img");
+    plot.setAttribute("aria-label", `${idolName} · ${seriesName}`);
+    plot.hidden = !isVisible;
+    panel.append(heading, plot);
+    chartContainer.appendChild(panel);
+    collapseToggle.addEventListener("click", function () {
+      var show = collapseToggle.getAttribute("aria-expanded") !== "true";
+      trendPanelVisibility[tier] = show;
+      collapseToggle.setAttribute("aria-expanded", String(show));
+      collapseToggle.setAttribute("aria-label", `${seriesName}: ${t(show ? "hideTrend" : "showTrend")}`);
+      plot.hidden = !show;
+      if (show) Plotly.Plots.resize(plot);
     });
 
-    var projectedScore = estimateEndScore(currentLog.score, currentLog.summaryTime, idolIndex, rank);
-    traces.push({
-      type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
-      legendgroup: seriesName, showlegend: false,
-      x: [toPlotlyDate(currentLog.summaryTime), toPlotlyDate(config.endTime)], y: [Number(currentLog.score), projectedScore],
-      customdata: [currentLog.summaryTime, config.endTime].map(function (value) { return formatTokyoTimestamp(value); }),
-      line: { color: color, width: 1.5, dash: "dot" },
-      marker: { color: color, size: 7, symbol: "diamond" },
-      hovertemplate: `${idolName} · ${seriesName} · ${t("forecast")}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
-    });
-  }
-
-  chartElement._tokyoAxisTimes = traces.flatMap(function (trace) { return trace.x; });
-  Plotly.react(chartElement, traces, {
-    autosize: true, height: 590,
-    margin: { t: 18, r: 24, b: 65, l: 78 },
-    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-    font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
-    hovermode: "closest", uirevision: `${config.eventID}-${config.startTime}-${config.endTime}-${idolIndex}`,
-    xaxis: { title: { text: t("chartX") }, type: "date", range: eventWindow, autorange: false, fixedrange: true, gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes, eventWindow[0], eventWindow[1]) },
-    yaxis: { title: { text: t("chartY") }, type: logScaleEnabled ? "log" : "linear", gridcolor: "#eceaf0", zeroline: false },
-    legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
-  }, { responsive: true, displaylogo: false }).then(function () {
-    return Plotly.relayout(chartElement, {
-      "xaxis.range": eventWindow,
-      "xaxis.autorange": false,
-      "xaxis.fixedrange": true,
+    var isLastPanel = tierIndex === config.key_ranks.length - 1;
+    var axisTicks = getTokyoAxisTicks([], eventWindow[0], eventWindow[1]);
+    var layout = {
+      autosize: true, height: 230,
+      margin: { t: 4, r: 16, b: isLastPanel ? 58 : 12, l: 64 },
+      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+      font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 10, color: "#5b5963" },
+      hovermode: "closest", showlegend: false,
+      uirevision: `${config.eventID}-${config.startTime}-${config.endTime}-${idolIndex}-${tier}-${rankTrendEnabled}`,
+      xaxis: {
+        type: "date", range: eventWindow, autorange: false, fixedrange: true,
+        gridcolor: "#eceaf0", zeroline: false, ...axisTicks,
+        showticklabels: isLastPanel,
+        title: isLastPanel ? { text: t("chartX") } : { text: "" },
+      },
+      yaxis: {
+        type: rankTrendEnabled ? "linear" : (logScaleEnabled ? "log" : "linear"),
+        title: { text: "" }, autorange: rankTrendEnabled ? "reversed" : true,
+        dtick: rankTrendEnabled ? 5 : undefined,
+        ...(rankTrendEnabled ? {} : getKoreanScoreAxisTicks(tierTraces.flatMap(function (trace) { return trace.y; }), logScaleEnabled)),
+        gridcolor: "#eceaf0", zeroline: false,
+      },
+    };
+    if (!tierTraces.length) layout.annotations = [{ text: t("noData"), showarrow: false, x: 0.5, y: 0.5, xref: "paper", yref: "paper" }];
+    Plotly.react(plot, tierTraces, layout, { responsive: true, displaylogo: false }).then(function () {
+      return Plotly.relayout(plot, { "xaxis.range": eventWindow, "xaxis.autorange": false, "xaxis.fixedrange": true });
     });
   });
 }

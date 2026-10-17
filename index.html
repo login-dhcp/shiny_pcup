@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/common.css?version=event-bounds-20">
+  <link rel="stylesheet" href="./assets/common.css?version=previous-estimate-default-28">
 </head>
 <body>
   <header class="site-header">
@@ -70,13 +70,13 @@
         <div><p class="section-label" data-i18n="chartEyebrow">SCORE TRENDS</p><h2 id="trend-title" data-i18n="chartTitle">아이돌 점수 추이와 종료 예상</h2></div>
         <div class="chart-controls">
           <label class="rank-select-label"><span data-i18n="chartIdol">아이돌</span><select id="trendIdolSelect" aria-label="차트 아이돌" data-i18n-aria="chartIdol"></select></label>
-          <button id="scaleModeToggle" class="chart-toggle" type="button" aria-pressed="true"><span class="chart-toggle-track" aria-hidden="true"></span><span data-i18n="logScaleToggleLabel">로그 축</span></button>
-          <button id="estimateModeToggle" class="chart-toggle" type="button" aria-pressed="false"><span class="chart-toggle-track" aria-hidden="true"></span><span id="estimateModeToggleLabel" data-i18n="previousEstimateToggleLabel">이전 이벤트 기준 예상</span></button>
+          <button id="scaleModeToggle" class="chart-toggle" type="button" aria-pressed="false"><span class="chart-toggle-track" aria-hidden="true"></span><span data-i18n="logScaleToggleLabel">로그 축</span></button>
+          <button id="estimateModeToggle" class="chart-toggle" type="button" aria-pressed="true"><span class="chart-toggle-track" aria-hidden="true"></span><span id="estimateModeToggleLabel" data-i18n="previousEstimateToggleLabel">이전 이벤트 기준 예상</span></button>
           <button id="rankTrendToggle" class="chart-toggle" type="button" aria-pressed="false"><span class="chart-toggle-track" aria-hidden="true"></span><span data-i18n="rankTrendToggleLabel">등수 추이만 보기</span></button>
         </div>
       </div>
-      <div id="trendChart" role="img" aria-label="아이돌별 점수 추이와 종료 예상 차트" data-i18n-aria="chartTitle"></div>
-      <p class="chart-note" data-i18n="chartNote">실선은 기록된 점수, 점선은 이벤트 종료 시점 예상 점수입니다.</p>
+      <div id="trendChart" class="trend-panels" role="group" aria-label="아이돌별 점수 추이와 종료 예상 차트" data-i18n-aria="chartTitle"></div>
+      <p class="chart-note" data-i18n="chartNote">각 순위 구간은 별도 축을 사용합니다. 실선은 기록된 점수, 점선은 종료 예상 점수입니다.</p>
     </section>
 
     <section class="timer-panel" aria-labelledby="timer-title">
@@ -158,6 +158,6 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
   <script src="./assets/plotly-4.1.1.min.js" defer></script>
-  <script src="./temp.js?version=event-bounds-20" defer></script>
+  <script src="./temp.js?version=previous-estimate-default-28" defer></script>
 </body>
 </html>
