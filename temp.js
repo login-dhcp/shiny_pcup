@@ -184,6 +184,12 @@ var translations = {
     timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "휴식 타이머", timerDescription: "화면을 눌러 다음 동작까지의 시간을 확인하세요.",
     timerShortcuts: "키보드 조작을 켜면 Space / Enter: 진행 · Esc: 초기화 · R: 랩 시작 · S: 랩 정지 · C: 랩 기록 삭제", timerReady: "준비", timerTapLabel: "타이머 진행",
     timerDescriptionTitle: "타이머 설명 및 단축키", keyboardEnable: "키보드 조작 켜기", keyboardDisable: "키보드 조작 끄기",
+    breakTimerGuideTitle: "휴식 타이머", breakTimerGuide1: "첫 입력 후 30초 카운트가 시작됩니다. 세 번 입력하면 5분 휴식 타이머가 시작되고, 휴식 중에는 입력할 수 없습니다.",
+    breakTimerGuide2: "30초 안에 세 번 입력하지 않으면 카운트가 초기화됩니다. 연속 입력 간격을 설정하면 해당 시간 안에 세 번 입력했을 때 타이머가 초기화됩니다.",
+    breakTimerGuide3: "키보드 조작을 켜면 Space 또는 Enter로 입력하고 Esc로 휴식 타이머를 초기화할 수 있습니다.",
+    lapTimerGuideTitle: "랩 스톱워치", lapTimerGuide1: "랩 시작 버튼으로 측정을 시작하고 랩 정지 버튼으로 시간을 기록합니다.",
+    lapTimerGuide2: "키보드 조작을 켜면 R로 랩을 시작하거나 새 랩을 열고, S로 측정을 정지하며, C로 랩 기록을 삭제합니다.",
+    lapTimerGuide3: "랩 기록과 연속 입력 설정은 이 브라우저에 저장됩니다.",
     timerRunning: "다음 입력까지", timerLocked: "휴식 시간", stopwatchLabel: "랩 스톱워치", stopwatchStart: "랩 시작",
     stopwatchStop: "랩 정지", stopwatchClear: "기록 삭제", stopwatchResults: "랩 기록", noStopwatchResults: "아직 랩 기록이 없습니다.",
     lapStatistics: "랩 통계", medianLap: "중앙값 랩", meanLap: "평균 랩", minLap: "최단 랩", maxLap: "최장 랩",
@@ -216,6 +222,12 @@ var translations = {
     timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "Break timer", timerDescription: "Tap the timer to track the wait between actions.",
     timerShortcuts: "Enable keyboard controls: Space / Enter: count · Esc: reset · R: start lap · S: stop lap · C: clear lap history", timerReady: "Ready", timerTapLabel: "Advance timer",
     timerDescriptionTitle: "Timer guide and shortcuts", keyboardEnable: "Enable keyboard controls", keyboardDisable: "Disable keyboard controls",
+    breakTimerGuideTitle: "Break timer", breakTimerGuide1: "The first input starts a 30-second countdown. Three inputs start a 5-minute break timer; inputs are ignored during the break.",
+    breakTimerGuide2: "If you do not reach three inputs within 30 seconds, the count resets. If rapid input is configured, three inputs within that interval reset the timer.",
+    breakTimerGuide3: "Enable keyboard controls to count with Space or Enter, or reset the break timer with Esc.",
+    lapTimerGuideTitle: "Lap stopwatch", lapTimerGuide1: "Use Start lap to begin timing and Stop lap to record the elapsed time.",
+    lapTimerGuide2: "With keyboard controls enabled, R starts a lap or opens a new lap, S stops timing, and C clears lap history.",
+    lapTimerGuide3: "Lap history and the rapid input setting are saved in this browser.",
     timerRunning: "Time until next action", timerLocked: "Break time", stopwatchLabel: "Lap stopwatch", stopwatchStart: "Start lap",
     stopwatchStop: "Stop lap", stopwatchClear: "Clear laps", stopwatchResults: "Lap history", noStopwatchResults: "No laps recorded yet.",
     lapStatistics: "Lap statistics", medianLap: "Median lap", meanLap: "Mean lap", minLap: "Min lap", maxLap: "Max lap",
@@ -253,6 +265,7 @@ function initializeBreakTimer() {
   var lapButton = document.getElementById("stopwatchToggle");
   var results = document.getElementById("stopwatchResultsList");
   var keyboardToggle = document.getElementById("timerKeyboardToggle");
+  var keyboardToggleLabel = document.getElementById("timerKeyboardToggleLabel");
   var keyboardEnabled = false;
 
   function save() {
@@ -292,7 +305,7 @@ function initializeBreakTimer() {
   }
   function updateKeyboardToggle() {
     keyboardToggle.setAttribute("aria-pressed", String(keyboardEnabled));
-    keyboardToggle.textContent = t(keyboardEnabled ? "keyboardDisable" : "keyboardEnable");
+    keyboardToggleLabel.textContent = t(keyboardEnabled ? "keyboardDisable" : "keyboardEnable");
   }
   function render(now) {
     if (timer.count && timer.count < 3 && timer.startedAt) {
@@ -351,18 +364,12 @@ function initializeBreakTimer() {
 }
 
 function initLanguageSelector() {
-  try {
-    var savedLanguage = localStorage.getItem("shiny-pcup-language");
-    if (savedLanguage === "ko" || savedLanguage === "en") currentLanguage = savedLanguage;
-  } catch (error) {
-    // Keep Korean as the default when browser storage is unavailable.
-  }
+  currentLanguage = "ko";
   var languageSelect = document.getElementById("languageSelect");
   languageSelect.value = currentLanguage;
   applyLanguage();
   languageSelect.addEventListener("change", function () {
     currentLanguage = languageSelect.value;
-    try { localStorage.setItem("shiny-pcup-language", currentLanguage); } catch (error) {}
     applyLanguage();
     if (document.getElementById("eventID_select").options.length) updateEventOptionLabels();
     updateTrendIdolLabels();
@@ -391,7 +398,8 @@ function applyLanguage() {
   });
   document.getElementById("languageSelect").value = currentLanguage;
   var keyboardToggle = document.getElementById("timerKeyboardToggle");
-  if (keyboardToggle) keyboardToggle.textContent = t(keyboardToggle.getAttribute("aria-pressed") === "true" ? "keyboardDisable" : "keyboardEnable");
+  var keyboardToggleLabel = document.getElementById("timerKeyboardToggleLabel");
+  if (keyboardToggle && keyboardToggleLabel) keyboardToggleLabel.textContent = t(keyboardToggle.getAttribute("aria-pressed") === "true" ? "keyboardDisable" : "keyboardEnable");
 }
 
 function formatAnniversary(eventID) {
