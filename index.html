@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-3">
+  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-4">
 </head>
 <body>
   <header class="site-header">
@@ -67,7 +67,10 @@
     <section class="chart-panel" aria-labelledby="trend-title" aria-label="점수 추이 차트" data-i18n-aria="chartSectionLabel">
       <div class="chart-heading">
         <div><p class="section-label" data-i18n="chartEyebrow">SCORE TRENDS</p><h2 id="trend-title" data-i18n="chartTitle">아이돌 점수 추이와 종료 예상</h2></div>
-        <label class="rank-select-label"><span data-i18n="chartIdol">아이돌</span><select id="trendIdolSelect" aria-label="차트 아이돌" data-i18n-aria="chartIdol"></select></label>
+        <div class="chart-controls">
+          <label class="rank-select-label"><span data-i18n="chartIdol">아이돌</span><select id="trendIdolSelect" aria-label="차트 아이돌" data-i18n-aria="chartIdol"></select></label>
+          <button id="estimateModeToggle" class="estimate-mode-toggle" type="button" aria-pressed="false" data-i18n="previousEstimateButton">이전 이벤트 기준 예상</button>
+        </div>
       </div>
       <div id="trendChart" role="img" aria-label="아이돌별 점수 추이와 종료 예상 차트" data-i18n-aria="chartTitle"></div>
       <p class="chart-note" data-i18n="chartNote">실선은 기록된 점수, 점선은 이벤트 종료 시점 예상 점수입니다.</p>
@@ -104,6 +107,6 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
   <script src="./assets/plotly-4.1.1.min.js" defer></script>
-  <script src="./temp.js?version=language-plotly-3" defer></script>
+  <script src="./temp.js?version=language-plotly-4" defer></script>
 </body>
 </html>

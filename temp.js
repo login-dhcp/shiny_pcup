@@ -146,6 +146,8 @@ configs = [
 data_all_all = {};
 config = configs[configs.length - 1];  // current config. Initially the latest event.
 var currentLanguage = "ko";
+var previousEventEstimateEnabled = false;
+var previousEstimateConfig = null;
 var englishIdolNames = [
   "Mano", "Hiori", "Meguru", "Kogane", "Mamimi", "Sakuya", "Yuika", "Kiriko",
   "Kaho", "Chiyoko", "Juri", "Rinze", "Natsuha", "Amana", "Tenka", "Chiyuki",
@@ -173,6 +175,8 @@ var translations = {
     dataSource: "랭킹 데이터 제공", author: "제작", recordedAt: "기록 시간", noData: "선택한 이벤트의 기록 데이터가 없습니다.",
     noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
     languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위",
+    previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
+    loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
   },
   en: {
     documentTitle: "Shiny Colors Producer Cup", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
@@ -194,6 +198,8 @@ var translations = {
     dataSource: "Ranking data", author: "Made by", recordedAt: "Recorded", noData: "No ranking data is available for the selected event.",
     noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp", chartY: "Fan count", chartLoading: "Loading chart data",
     languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank",
+    previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
+    loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
   },
 };
 
@@ -224,8 +230,10 @@ function initLanguageSelector() {
     applyLanguage();
     if (document.getElementById("eventID_select").options.length) updateEventOptionLabels();
     updateTrendIdolLabels();
+    updateEstimateModeButton();
     update();
   });
+  document.getElementById("estimateModeToggle").addEventListener("click", togglePreviousEventEstimate);
 }
 
 function applyLanguage() {
@@ -407,6 +415,9 @@ function buildEventIDSelector() {
     .addEventListener("click", async function (e) {
       var _config_index =
         document.getElementById("eventID_select").selectedIndex;
+      previousEventEstimateEnabled = false;
+      previousEstimateConfig = null;
+      updateEstimateModeButton();
       config = configs[_config_index];
       await getAllData(_config_index, waitTime);
       initializeTrendControls();
@@ -483,13 +494,76 @@ function getRankLogAtTime(rankData, timeIndex, referenceLength) {
   return rankData[rankIndex] || null;
 }
 
-function estimateEndScore(score, timestamp) {
+function estimateEndScore(score, timestamp, idolIndex, rank) {
   var totalHours = timeDiff(config.startTime, config.endTime);
   var elapsedHours = timeDiff(config.startTime, timestamp);
   if (!Number.isFinite(totalHours) || totalHours <= 0 || elapsedHours <= 0 || elapsedHours >= totalHours) {
     return Number(score);
   }
+  if (previousEventEstimateEnabled && previousEstimateConfig && idolIndex !== undefined && rank !== undefined) {
+    var previousEventData = data_all_all[previousEstimateConfig.eventID];
+    var previousSample = previousEventData && previousEventData[0] && previousEventData[0][previousEstimateConfig.key_ranks[0]];
+    var previousRankData = previousEventData && previousEventData[idolIndex] && previousEventData[idolIndex][rank];
+    if (Array.isArray(previousSample) && previousSample.length && Array.isArray(previousRankData) && previousRankData.length) {
+      var progress = Math.max(0, Math.min(1, elapsedHours / totalHours));
+      var previousTotalHours = timeDiff(previousEstimateConfig.startTime, previousEstimateConfig.endTime);
+      var targetTime = Date.parse(previousEstimateConfig.startTime) + previousTotalHours * progress * 3600000;
+      var matchingLogs = previousRankData.filter(function (log) { return Number(log.score) > 0 && Number.isFinite(Date.parse(log.summaryTime)); });
+      if (matchingLogs.length) {
+        var previousStartScore = Number(matchingLogs[0].score);
+        var previousAtProgress = matchingLogs.reduce(function (closest, log) {
+          return Math.abs(Date.parse(log.summaryTime) - targetTime) < Math.abs(Date.parse(closest.summaryTime) - targetTime) ? log : closest;
+        }, matchingLogs[0]);
+        var previousFinalScore = Number(matchingLogs[matchingLogs.length - 1].score);
+        var previousProgressScore = Number(previousAtProgress.score);
+        if (previousProgressScore > 0 && previousFinalScore >= previousProgressScore && previousFinalScore >= previousStartScore) {
+          return Number(score) * previousFinalScore / previousProgressScore;
+        }
+      }
+    }
+  }
   return Number(score) * totalHours / elapsedHours;
+}
+
+async function togglePreviousEventEstimate() {
+  var button = document.getElementById("estimateModeToggle");
+  if (previousEventEstimateEnabled) {
+    previousEventEstimateEnabled = false;
+    updateEstimateModeButton();
+    update();
+    return;
+  }
+  var currentIndex = configs.indexOf(config);
+  button.disabled = true;
+  button.textContent = t("loadingPreviousEvent");
+  for (var i = currentIndex - 1; i >= 0; i--) {
+    var candidate = configs[i];
+    if (!data_all_all[candidate.eventID]) {
+      var activeConfig = config;
+      config = candidate;
+      await getAllData();
+      config = activeConfig;
+    }
+    if (hasRankingData(candidate)) {
+      previousEstimateConfig = candidate;
+      break;
+    }
+  }
+  button.disabled = false;
+  if (previousEstimateConfig) {
+    previousEventEstimateEnabled = true;
+  } else {
+    button.title = t("previousEventUnavailable");
+  }
+  updateEstimateModeButton();
+  update();
+}
+
+function updateEstimateModeButton() {
+  var button = document.getElementById("estimateModeToggle");
+  if (!button) return;
+  button.textContent = previousEventEstimateEnabled ? t("currentEstimateButton") : t("previousEstimateButton");
+  button.setAttribute("aria-pressed", String(previousEventEstimateEnabled));
 }
 
 function updateTrendChart(selectedTime) {
@@ -550,7 +624,7 @@ function updateTrendChart(selectedTime) {
       hovertemplate: `${idolName} · ${seriesName}<br>%{x|%Y-%m-%d %H:%M}<br>%{y:,.0f}<extra></extra>`,
     });
 
-    var projectedScore = estimateEndScore(currentLog.score, currentLog.summaryTime);
+    var projectedScore = estimateEndScore(currentLog.score, currentLog.summaryTime, idolIndex, rank);
     traces.push({
       type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
       legendgroup: seriesName, showlegend: false,
@@ -680,7 +754,7 @@ async function buildPredictionTable(time) {
       }
       var score = data_final_log["score"];
       var timeString = data_final_log["summaryTime"];
-      score = estimateEndScore(score, timeString);
+      score = estimateEndScore(score, timeString, i, rank);
       code += `<td>${numberWithCommas(parseInt(score))}</td>\n`;
     }
     code += "</tr>\n";
