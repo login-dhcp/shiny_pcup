@@ -145,12 +145,133 @@ configs = [
 
 data_all_all = {};
 config = configs[configs.length - 1];  // current config. Initially the latest event.
+var currentLanguage = "ko";
+var previousEventEstimateEnabled = false;
+var previousEstimateConfig = null;
+var logScaleEnabled = true;
+var englishIdolNames = [
+  "Mano", "Hiori", "Meguru", "Kogane", "Mamimi", "Sakuya", "Yuika", "Kiriko",
+  "Kaho", "Chiyoko", "Juri", "Rinze", "Natsuha", "Amana", "Tenka", "Chiyuki",
+  "Asahi", "Fuyuko", "Mei", "Toru", "Madoka", "Koito", "Hinana", "Nichika",
+  "Mikoto", "Luka", "Hana", "Haruki",
+];
+var translations = {
+  ko: {
+    documentTitle: "샤이니컬러즈 프로듀서컵", wiki: "위키", source: "소스", pageTitle: "프로듀서컵 기록실", navigation: "주요 링크",
+    introText: "아이돌별 팬 랭킹 점수의 흐름과 종료 예상치를 한눈에 확인하세요.", dataBadge: "기록 데이터",
+    controlsLabel: "기록 조회 설정", eventArchive: "이벤트 기록", controlsTitle: "이벤트와 기록 시점 선택",
+    loadingTime: "기록 시점을 불러오는 중", eventSelect: "이벤트 선택", viewEvent: "이벤트 보기",
+    earliest: "시작 기록", latest: "최신 기록", timelineLabel: "기록 시점", helpTitle: "이 페이지 이용 안내",
+    helpLine1: "표는 왼쪽부터 현재 점수, 종료 시점 예상 점수, 현재 등수를 보여줍니다.",
+    helpLine2: "이벤트를 고른 뒤 이벤트 보기를 누르고, 슬라이더로 기록 시점을 이동하세요.",
+    helpLine3: "데이터 로딩에 몇 초 걸릴 수 있습니다. 오래 기다려도 표시되지 않으면 새로고침해 주세요.",
+    chartSectionLabel: "점수 추이 차트", chartEyebrow: "SCORE TRENDS", chartTitle: "아이돌 점수 추이와 종료 예상",
+    chartRank: "순위 구간", chartNote: "실선은 기록된 점수, 점선은 이벤트 종료 시점 예상 점수입니다.",
+    resultsLabel: "아이돌 랭킹 결과", rankingOverview: "RANKING OVERVIEW", resultsTitle: "아이돌별 랭킹",
+    scrollNote: "표를 좌우로 움직여 모든 순위를 확인할 수 있어요.", currentScores: "현재 점수",
+    selectedTime: "선택한 시점의 기록", forecast: "종료 예상", forecastSubtitle: "현재 추세 기준 예상 점수",
+    currentRank: "현재 등수", rankSubtitle: "아이돌별 순위 구간", rankLegend: "순위 색상 범례",
+    topRank: "상위", upperRank: "중상위", lowerRank: "중하위", bottomRank: "하위",
+    lastUpdated: "최신 업데이트", disclaimer: "본 사이트는 BANDAI NAMCO 및 BXD와 무관한 팬 제작 페이지입니다. 이미지와 관련 지적 재산권은 해당 권리자에게 있습니다.",
+    dataSource: "랭킹 데이터 제공", author: "제작", recordedAt: "기록 시간", noData: "선택한 이벤트의 기록 데이터가 없습니다.",
+    noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
+    languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위",
+    previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
+    loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
+    linearScaleButton: "선형 축으로 보기", logScaleButton: "로그 축으로 보기",
+  },
+  en: {
+    documentTitle: "Shiny Colors Producer Cup", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
+    introText: "Explore fan-ranking score trends and projected event-end scores for every idol.", dataBadge: "Ranking data",
+    controlsLabel: "Archive controls", eventArchive: "EVENT ARCHIVE", controlsTitle: "Choose an event and timestamp",
+    loadingTime: "Loading timestamp", eventSelect: "Select event", viewEvent: "View event",
+    earliest: "Earliest record", latest: "Latest record", timelineLabel: "Record timestamp", helpTitle: "How to use this page",
+    helpLine1: "The tables show current scores, projected end scores, and current ranks from left to right.",
+    helpLine2: "Choose an event, select View event, then move the slider to browse its history.",
+    helpLine3: "Loading can take a few seconds. Refresh if the data does not appear.",
+    chartSectionLabel: "Score trend chart", chartEyebrow: "SCORE TRENDS", chartTitle: "Idol score trends and end estimates",
+    chartRank: "Rank tier", chartNote: "Solid lines show recorded scores; dotted lines show projections to event end.",
+    resultsLabel: "Idol ranking results", rankingOverview: "RANKING OVERVIEW", resultsTitle: "Rankings by idol",
+    scrollNote: "Scroll horizontally inside a table to see every rank.", currentScores: "Current scores",
+    selectedTime: "Scores at selected time", forecast: "End estimate", forecastSubtitle: "Projected from the current trend",
+    currentRank: "Current rank", rankSubtitle: "Rank tier by idol", rankLegend: "Rank color legend",
+    topRank: "Top", upperRank: "Upper", lowerRank: "Lower", bottomRank: "Bottom",
+    lastUpdated: "Last updated", disclaimer: "This fan-made site is not affiliated with BANDAI NAMCO or BXD. Images and related intellectual property belong to their respective owners.",
+    dataSource: "Ranking data", author: "Made by", recordedAt: "Recorded", noData: "No ranking data is available for the selected event.",
+    noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp", chartY: "Fan count", chartLoading: "Loading chart data",
+    languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank",
+    previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
+    loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
+    linearScaleButton: "Use linear scale", logScaleButton: "Use log scale",
+  },
+};
 
 //////////
 
 $(document).ready(function (e) {
+  initLanguageSelector();
   init();
 });
+
+function t(key) {
+  return translations[currentLanguage][key] || translations.ko[key] || key;
+}
+
+function initLanguageSelector() {
+  try {
+    var savedLanguage = localStorage.getItem("shiny-pcup-language");
+    if (savedLanguage === "ko" || savedLanguage === "en") currentLanguage = savedLanguage;
+  } catch (error) {
+    // Keep Korean as the default when browser storage is unavailable.
+  }
+  var languageSelect = document.getElementById("languageSelect");
+  languageSelect.value = currentLanguage;
+  applyLanguage();
+  languageSelect.addEventListener("change", function () {
+    currentLanguage = languageSelect.value;
+    try { localStorage.setItem("shiny-pcup-language", currentLanguage); } catch (error) {}
+    applyLanguage();
+    if (document.getElementById("eventID_select").options.length) updateEventOptionLabels();
+    updateTrendIdolLabels();
+    updateEstimateModeButton();
+    updateScaleModeButton();
+    update();
+  });
+  document.getElementById("estimateModeToggle").addEventListener("click", togglePreviousEventEstimate);
+  document.getElementById("scaleModeToggle").addEventListener("click", function () {
+    logScaleEnabled = !logScaleEnabled;
+    updateScaleModeButton();
+    updateTrendChart();
+  });
+  updateScaleModeButton();
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage;
+  document.title = t("documentTitle");
+  document.querySelectorAll("[data-i18n]").forEach(function (element) {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach(function (element) {
+    element.setAttribute("aria-label", t(element.dataset.i18nAria));
+  });
+  document.getElementById("languageSelect").value = currentLanguage;
+}
+
+function formatAnniversary(eventID) {
+  var anniversary = (eventID - 40000) / 2;
+  return currentLanguage === "ko" ? `${anniversary}주년` : `${anniversary}th Anniversary`;
+}
+
+function getIdolName(index) {
+  return currentLanguage === "ko" ? idolNames[index] : englishIdolNames[index] || idolNames[index];
+}
+
+function updateEventOptionLabels() {
+  Array.from(document.getElementById("eventID_select").options).forEach(function (option) {
+    option.textContent = formatAnniversary(Number(option.value));
+  });
+}
 
 async function alertFinished() {
   alert("Finished!");
@@ -169,6 +290,7 @@ async function init() {
   document.getElementById("eventID_select").value = String(config.eventID);
 
   await buildTimeSlider();
+  initializeTrendControls();
   update();
   await alertFinished();
 }
@@ -202,14 +324,16 @@ function update() {
 
   setTimeText(sample.summaryTime);
   updateHTML(time);
+  updateTrendChart(time);
 }
 
 function showNoRankingData() {
-  setTimeText("선택한 이벤트의 기록 데이터가 없습니다.");
+  setTimeText(t("noData"));
   ["main_table", "predict_table", "ranking_table"].forEach(function (id) {
     document.getElementById(id).innerHTML =
-      "<tbody><tr><td class=\"empty-state\" colspan=\"6\">아직 표시할 기록이 없습니다.</td></tr></tbody>";
+      `<tbody><tr><td class=\"empty-state\" colspan=\"6\">${t("noRows")}</td></tr></tbody>`;
   });
+  updateTrendChart();
 }
 
 async function getDataAPICached(eventID) {
@@ -291,7 +415,7 @@ function buildEventIDSelector() {
 
     var opt = document.createElement("option");
     opt.value = _eventID;
-    opt.innerHTML = `${(_eventID - 40000) / 2}주년`;
+    opt.textContent = formatAnniversary(_eventID);
     select.appendChild(opt);
   }
   select.selectedIndex = configs.length - 1;
@@ -301,8 +425,12 @@ function buildEventIDSelector() {
     .addEventListener("click", async function (e) {
       var _config_index =
         document.getElementById("eventID_select").selectedIndex;
+      previousEventEstimateEnabled = false;
+      previousEstimateConfig = null;
+      updateEstimateModeButton();
       config = configs[_config_index];
       await getAllData(_config_index, waitTime);
+      initializeTrendControls();
       await resetTimeSlider();
       await update();
       await alertFinished();
@@ -346,13 +474,203 @@ async function buildTimeSlider() {
   await resetTimeSlider();
 }
 
+function initializeTrendControls() {
+  var select = document.getElementById("trendIdolSelect");
+  select.replaceChildren();
+  config.idols.forEach(function (idol, index) {
+    var option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getIdolName(index);
+    select.appendChild(option);
+  });
+  select.value = "0";
+  select.onchange = function () { updateTrendChart(); };
+}
+
+function updateTrendIdolLabels() {
+  var select = document.getElementById("trendIdolSelect");
+  if (!select) return;
+  Array.from(select.options).forEach(function (option, index) {
+    option.textContent = getIdolName(index);
+  });
+}
+
+function getRankLogAtTime(rankData, timeIndex, referenceLength) {
+  if (!Array.isArray(rankData) || rankData.length === 0) return null;
+  var rankIndex = rankData.length < referenceLength
+    ? timeIndex - (referenceLength - rankData.length)
+    : timeIndex;
+  if (rankIndex < 0) return rankData[0];
+  return rankData[rankIndex] || null;
+}
+
+function estimateEndScore(score, timestamp, idolIndex, rank) {
+  var totalHours = timeDiff(config.startTime, config.endTime);
+  var elapsedHours = timeDiff(config.startTime, timestamp);
+  if (!Number.isFinite(totalHours) || totalHours <= 0 || elapsedHours <= 0 || elapsedHours >= totalHours) {
+    return Number(score);
+  }
+  if (previousEventEstimateEnabled && previousEstimateConfig && idolIndex !== undefined && rank !== undefined) {
+    var previousEventData = data_all_all[previousEstimateConfig.eventID];
+    var previousSample = previousEventData && previousEventData[0] && previousEventData[0][previousEstimateConfig.key_ranks[0]];
+    var previousRankData = previousEventData && previousEventData[idolIndex] && previousEventData[idolIndex][rank];
+    if (Array.isArray(previousSample) && previousSample.length && Array.isArray(previousRankData) && previousRankData.length) {
+      var progress = Math.max(0, Math.min(1, elapsedHours / totalHours));
+      var previousTotalHours = timeDiff(previousEstimateConfig.startTime, previousEstimateConfig.endTime);
+      var targetTime = Date.parse(previousEstimateConfig.startTime) + previousTotalHours * progress * 3600000;
+      var matchingLogs = previousRankData.filter(function (log) { return Number(log.score) > 0 && Number.isFinite(Date.parse(log.summaryTime)); });
+      if (matchingLogs.length) {
+        var previousStartScore = Number(matchingLogs[0].score);
+        var previousAtProgress = matchingLogs.reduce(function (closest, log) {
+          return Math.abs(Date.parse(log.summaryTime) - targetTime) < Math.abs(Date.parse(closest.summaryTime) - targetTime) ? log : closest;
+        }, matchingLogs[0]);
+        var previousFinalScore = Number(matchingLogs[matchingLogs.length - 1].score);
+        var previousProgressScore = Number(previousAtProgress.score);
+        if (previousProgressScore > 0 && previousFinalScore >= previousProgressScore && previousFinalScore >= previousStartScore) {
+          return Number(score) * previousFinalScore / previousProgressScore;
+        }
+      }
+    }
+  }
+  return Number(score) * totalHours / elapsedHours;
+}
+
+async function togglePreviousEventEstimate() {
+  var button = document.getElementById("estimateModeToggle");
+  if (previousEventEstimateEnabled) {
+    previousEventEstimateEnabled = false;
+    updateEstimateModeButton();
+    update();
+    return;
+  }
+  var currentIndex = configs.indexOf(config);
+  button.disabled = true;
+  button.textContent = t("loadingPreviousEvent");
+  for (var i = currentIndex - 1; i >= 0; i--) {
+    var candidate = configs[i];
+    if (!data_all_all[candidate.eventID]) {
+      var activeConfig = config;
+      config = candidate;
+      await getAllData();
+      config = activeConfig;
+    }
+    if (hasRankingData(candidate)) {
+      previousEstimateConfig = candidate;
+      break;
+    }
+  }
+  button.disabled = false;
+  if (previousEstimateConfig) {
+    previousEventEstimateEnabled = true;
+  } else {
+    button.title = t("previousEventUnavailable");
+  }
+  updateEstimateModeButton();
+  update();
+}
+
+function updateEstimateModeButton() {
+  var button = document.getElementById("estimateModeToggle");
+  if (!button) return;
+  button.textContent = previousEventEstimateEnabled ? t("currentEstimateButton") : t("previousEstimateButton");
+  button.setAttribute("aria-pressed", String(previousEventEstimateEnabled));
+}
+
+function updateScaleModeButton() {
+  var button = document.getElementById("scaleModeToggle");
+  if (!button) return;
+  button.textContent = logScaleEnabled ? t("linearScaleButton") : t("logScaleButton");
+  button.setAttribute("aria-pressed", String(logScaleEnabled));
+}
+
+function updateTrendChart(selectedTime) {
+  if (!window.Plotly) return;
+  var chartElement = document.getElementById("trendChart");
+  var eventData = data_all_all[config.eventID];
+  var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
+  if (!Array.isArray(sampleData) || sampleData.length === 0) {
+    Plotly.react(chartElement, [], {
+      autosize: true,
+      margin: { t: 15, r: 20, b: 50, l: 65 },
+      annotations: [{ text: t("noData"), showarrow: false, x: 0.5, y: 0.5, xref: "paper", yref: "paper" }],
+      xaxis: { visible: false }, yaxis: { visible: false },
+    }, { responsive: true, displaylogo: false });
+    return;
+  }
+
+  var idolSelect = document.getElementById("trendIdolSelect");
+  var idolIndex = Number(idolSelect.value || 0);
+  var idolData = eventData[idolIndex];
+  var referenceLength = sampleData.length;
+  var timeIndex = selectedTime === undefined
+    ? Math.max(0, Math.min(Number(document.getElementById("timeRange").value) - 1, referenceLength - 1))
+    : Math.max(0, Math.min(selectedTime, referenceLength - 1));
+  var selectedPoint = sampleData[timeIndex];
+  var cutoff = Date.parse(selectedPoint.summaryTime);
+  var palette = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#ff9da7", "#9c755f", "#bab0ab", "#6f4e7c", "#2f7f9d", "#cc6677", "#447744", "#aa4499", "#ddaa33", "#6699cc", "#884400", "#117755", "#882255", "#888844", "#44aa99", "#9955bb", "#cc6677", "#669944", "#ee7733", "#4477aa", "#aa3377"];
+  var traces = [];
+
+  var idolName = getIdolName(idolIndex);
+  for (var rankIndex = 0; rankIndex < config.key_ranks.length; rankIndex++) {
+    var rank = config.key_ranks[rankIndex];
+    var rankData = idolData && idolData[rank];
+    if (!Array.isArray(rankData) || rankData.length === 0) continue;
+
+    var trendX = [];
+    var trendY = [];
+    for (var time = 0; time <= timeIndex; time++) {
+      var log = getRankLogAtTime(rankData, time, referenceLength);
+      var logTime = log && Date.parse(log.summaryTime);
+      if (!log || !Number.isFinite(logTime) || logTime > cutoff) continue;
+      var previous = trendX.length - 1;
+      if (previous >= 0 && Date.parse(trendX[previous]) === logTime) {
+        trendY[previous] = Number(log.score);
+      } else {
+        trendX.push(log.summaryTime);
+        trendY.push(Number(log.score));
+      }
+    }
+
+    var currentLog = getRankLogAtTime(rankData, timeIndex, referenceLength);
+    if (!currentLog || trendX.length === 0) continue;
+    var color = palette[rankIndex % palette.length];
+    var seriesName = `${t("rankLabel")} ${rank}`;
+    traces.push({
+      type: "scatter", mode: "lines", name: seriesName, legendgroup: seriesName,
+      x: trendX, y: trendY, line: { color: color, width: 2 },
+      hovertemplate: `${idolName} · ${seriesName}<br>%{x|%Y-%m-%d %H:%M}<br>%{y:,.0f}<extra></extra>`,
+    });
+
+    var projectedScore = estimateEndScore(currentLog.score, currentLog.summaryTime, idolIndex, rank);
+    traces.push({
+      type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
+      legendgroup: seriesName, showlegend: false,
+      x: [currentLog.summaryTime, config.endTime], y: [Number(currentLog.score), projectedScore],
+      line: { color: color, width: 1.5, dash: "dot" },
+      marker: { color: color, size: 7, symbol: "diamond" },
+      hovertemplate: `${idolName} · ${seriesName} · ${t("forecast")}<br>%{x|%Y-%m-%d %H:%M}<br>%{y:,.0f}<extra></extra>`,
+    });
+  }
+
+  Plotly.react(chartElement, traces, {
+    autosize: true, height: 590,
+    margin: { t: 18, r: 24, b: 65, l: 78 },
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
+    hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}`,
+    xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false },
+    yaxis: { title: { text: t("chartY") }, type: logScaleEnabled ? "log" : "linear", gridcolor: "#eceaf0", zeroline: false },
+    legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
+  }, { responsive: true, displaylogo: false });
+}
+
 ////////////////////////////
 // build main tables
 
 async function buildBasicTable(time) {
   var code = "";
   code += "<tr>\n";
-  code += "<th>Idol</th>\n";
+  code += `<th>${t("idol")}</th>\n`;
 
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
@@ -367,7 +685,7 @@ async function buildBasicTable(time) {
   // 2. 각 데이터 추가
   for (let i = 0; i < idols.length; i++) {
     code += "<tr>\n";
-    code += `<td>${idolNames[i]}</td>\n`;
+    code += `<td>${getIdolName(i)}</td>\n`;
 
     // 2. 아이돌별 데이터 추가
     var data_idol = data_all_all[eventID][i];
@@ -409,11 +727,12 @@ async function buildBasicTable(time) {
 async function buildPredictionTable(time) {
   var code = "";
   code += "<tr>\n";
-  code += "<th>Idol</th>\n";
+  code += `<th>${t("idol")}</th>\n`;
 
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
   var eventID = config["eventID"];
+  var endTime = config["endTime"];
 
   for (let j = 0; j < key_ranks.length; j++) {
     code += `<th>${key_ranks[j]}</th>\n`;
@@ -422,7 +741,7 @@ async function buildPredictionTable(time) {
 
   for (let i = 0; i < idols.length; i++) {
     code += "<tr>\n";
-    code += `<td>${idolNames[i]}</td>\n`;
+    code += `<td>${getIdolName(i)}</td>\n`;
 
     var data_idol = data_all_all[eventID][i];
     for (let j = 0; j < key_ranks.length; j++) {
@@ -452,13 +771,7 @@ async function buildPredictionTable(time) {
       }
       var score = data_final_log["score"];
       var timeString = data_final_log["summaryTime"];
-      var startTime = config["startTime"];
-      var endTime = config["endTime"];
-      var totalTime = timeDiff(startTime, endTime);
-      var currentTime = timeDiff(startTime, timeString);
-      if (currentTime < totalTime) {
-        score = (score * totalTime) / currentTime;
-      }
+      score = estimateEndScore(score, timeString, i, rank);
       code += `<td>${numberWithCommas(parseInt(score))}</td>\n`;
     }
     code += "</tr>\n";
@@ -471,7 +784,7 @@ async function buildPredictionTable(time) {
 async function buildRankingTable(time) {
   var code = "";
   code += "<tr>\n";
-  code += "<th>Idol</th>\n";
+  code += `<th>${t("idol")}</th>\n`;
   var key_ranks = config["key_ranks"];
   var idols = config["idols"];
   var eventID = config["eventID"];
@@ -484,7 +797,7 @@ async function buildRankingTable(time) {
   var table_target = document.getElementById("main_table");
   for (let i = 0; i < idols.length; i++) {
     code += "<tr>\n";
-    code += `<td>${idolNames[i]}</td>\n`;
+    code += `<td>${getIdolName(i)}</td>\n`;
 
     var data_idol = data_all_all[eventID][i];
     for (let j = 0; j < key_ranks.length; j++) {
@@ -532,6 +845,16 @@ function timeDiff(start, end) {
 }
 
 function setTimeText(time) {
-  var localeTime = time.toLocaleString();
-  document.getElementById("timeText").innerHTML = `기록 시간: ${localeTime}`;
+  var parsedTime = time instanceof Date ? time : new Date(time);
+  var localeTime = Number.isFinite(parsedTime.getTime())
+    ? parsedTime.toLocaleString(currentLanguage === "ko" ? "ko-KR" : "en-US")
+    : String(time);
+  var container = document.getElementById("timeText");
+  var icon = document.createElement("span");
+  icon.className = "time-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "◷";
+  var label = document.createElement("span");
+  label.textContent = `${t("recordedAt")}: ${localeTime}`;
+  container.replaceChildren(icon, label);
 }
