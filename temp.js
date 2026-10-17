@@ -148,6 +148,7 @@ config = configs[configs.length - 1];  // current config. Initially the latest e
 var currentLanguage = "ko";
 var previousEventEstimateEnabled = false;
 var previousEstimateConfig = null;
+var logScaleEnabled = true;
 var englishIdolNames = [
   "Mano", "Hiori", "Meguru", "Kogane", "Mamimi", "Sakuya", "Yuika", "Kiriko",
   "Kaho", "Chiyoko", "Juri", "Rinze", "Natsuha", "Amana", "Tenka", "Chiyuki",
@@ -177,6 +178,7 @@ var translations = {
     languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위",
     previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
     loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
+    linearScaleButton: "선형 축으로 보기", logScaleButton: "로그 축으로 보기",
   },
   en: {
     documentTitle: "Shiny Colors Producer Cup", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
@@ -200,6 +202,7 @@ var translations = {
     languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank",
     previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
     loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
+    linearScaleButton: "Use linear scale", logScaleButton: "Use log scale",
   },
 };
 
@@ -231,9 +234,16 @@ function initLanguageSelector() {
     if (document.getElementById("eventID_select").options.length) updateEventOptionLabels();
     updateTrendIdolLabels();
     updateEstimateModeButton();
+    updateScaleModeButton();
     update();
   });
   document.getElementById("estimateModeToggle").addEventListener("click", togglePreviousEventEstimate);
+  document.getElementById("scaleModeToggle").addEventListener("click", function () {
+    logScaleEnabled = !logScaleEnabled;
+    updateScaleModeButton();
+    updateTrendChart();
+  });
+  updateScaleModeButton();
 }
 
 function applyLanguage() {
@@ -566,6 +576,13 @@ function updateEstimateModeButton() {
   button.setAttribute("aria-pressed", String(previousEventEstimateEnabled));
 }
 
+function updateScaleModeButton() {
+  var button = document.getElementById("scaleModeToggle");
+  if (!button) return;
+  button.textContent = logScaleEnabled ? t("linearScaleButton") : t("logScaleButton");
+  button.setAttribute("aria-pressed", String(logScaleEnabled));
+}
+
 function updateTrendChart(selectedTime) {
   if (!window.Plotly) return;
   var chartElement = document.getElementById("trendChart");
@@ -642,7 +659,7 @@ function updateTrendChart(selectedTime) {
     font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
     hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}`,
     xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false },
-    yaxis: { title: { text: t("chartY") }, type: "log", gridcolor: "#eceaf0", zeroline: false },
+    yaxis: { title: { text: t("chartY") }, type: logScaleEnabled ? "log" : "linear", gridcolor: "#eceaf0", zeroline: false },
     legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
   }, { responsive: true, displaylogo: false });
 }
