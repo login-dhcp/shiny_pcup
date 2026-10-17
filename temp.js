@@ -872,6 +872,7 @@ function updateTrendChart() {
   var idolName = getIdolName(idolIndex);
   config.key_ranks.forEach(function (tier, tierIndex) {
     var tierTraces = [];
+    var finalEstimateScore = null;
     var color = palette[tierIndex % palette.length];
     var seriesName = `${t("rankLabel")} ${tier}`;
     if (rankTrendEnabled) {
@@ -932,6 +933,7 @@ function updateTrendChart() {
         var forecastScores = forecastTimes.map(function (forecastTimestamp) {
           return estimateTrendScoreAt(currentLog.score, currentLog.summaryTime, new Date(forecastTimestamp).toISOString(), idolIndex, tier);
         });
+        finalEstimateScore = forecastScores[forecastScores.length - 1];
         tierTraces.push({
           type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
           x: forecastTimes.map(function (value) { return new Date(value).toISOString(); }), y: forecastScores,
@@ -968,6 +970,13 @@ function updateTrendChart() {
     titleGroup.className = "trend-panel-title-group";
     titleGroup.append(collapseToggle, title, subtitle);
     heading.appendChild(titleGroup);
+    if (!rankTrendEnabled && Number.isFinite(finalEstimateScore)) {
+      var estimateBadge = document.createElement("span");
+      estimateBadge.className = "trend-final-estimate";
+      estimateBadge.textContent = `${t("forecast")}: ${numberWithCommas(Math.round(finalEstimateScore))}`;
+      estimateBadge.setAttribute("aria-label", `${seriesName} ${t("forecast")}: ${numberWithCommas(Math.round(finalEstimateScore))}`);
+      heading.appendChild(estimateBadge);
+    }
     var plot = document.createElement("div");
     plot.className = "trend-plot";
     plot.id = `trend-plot-${tier}`;
@@ -1009,7 +1018,7 @@ function updateTrendChart() {
       },
     };
     if (!tierTraces.length) layout.annotations = [{ text: t("noData"), showarrow: false, x: 0.5, y: 0.5, xref: "paper", yref: "paper" }];
-    Plotly.react(plot, tierTraces, layout, { responsive: true, displaylogo: false }).then(function () {
+    Plotly.react(plot, tierTraces, layout, { responsive: true, displaylogo: false, displayModeBar: false }).then(function () {
       return Plotly.relayout(plot, { "xaxis.range": eventWindow, "xaxis.autorange": false, "xaxis.fixedrange": true });
     });
   });

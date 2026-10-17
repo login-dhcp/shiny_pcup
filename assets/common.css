@@ -81,6 +81,7 @@ h1, h2, h3, p { margin-top: 0; }
 .trend-panel-title-group { display: flex; align-items: center; justify-content: flex-start; gap: 9px; }
 .trend-panel-heading h3 { margin: 0; color: #494450; font-size: 12px; font-weight: 700; }
 .trend-panel-heading span { color: #96919c; font-size: 10px; }
+.trend-final-estimate { margin-left: auto; padding: 6px 9px; border: 1px solid #e5d9ea; border-radius: 7px; background: var(--plum-pale); color: var(--plum-dark) !important; font-size: 11px !important; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .trend-collapse-toggle { width: 28px; height: 30px; flex: 0 0 28px; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: #594861; cursor: pointer; }
 .trend-collapse-toggle:focus-visible { outline: 2px solid var(--plum); outline-offset: 2px; border-radius: 3px; }
 .trend-panel-heading .trend-collapse-mark { display: inline-block; font-size: 24px; font-weight: 700; line-height: 1; transition: transform .16s ease; }
