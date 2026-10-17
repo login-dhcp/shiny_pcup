@@ -159,76 +159,92 @@ async function alertFinished() {
 async function init() {
   buildEventIDSelector();
 
-  await getAllData(waitTime);
-  await sleep(1000);
+  // Start at the newest event with bundled history. This keeps the page usable
+  // before an upcoming event has produced any ranking logs.
+  for (let i = configs.length - 1; i >= 0; i--) {
+    config = configs[i];
+    await getAllData();
+    if (hasRankingData(config)) break;
+  }
+  document.getElementById("eventID_select").value = String(config.eventID);
 
   await buildTimeSlider();
-
-  await update();
+  update();
   await alertFinished();
 }
 
-async function updateHTML(time) {
-  await buildBasicTable(time);
-  await buildPredictionTable(time);
-  await buildRankingTable(time);
+function hasRankingData(eventConfig) {
+  var eventData = data_all_all[eventConfig.eventID];
+  var sampleData = eventData && eventData[0] && eventData[0][eventConfig.key_ranks[0]];
+  return Array.isArray(sampleData) && sampleData.length > 0;
 }
 
-async function update() {
-  await updateTimeSliderText();
+function updateHTML(time) {
+  // Render all views in one synchronous pass so rapid slider input cannot
+  // leave an older table render queued behind the latest position.
+  buildBasicTable(time);
+  buildPredictionTable(time);
+  buildRankingTable(time);
+}
+
+function update() {
   var slider = document.getElementById("timeRange");
-  updateHTML(slider.value - 1);
+  var eventData = data_all_all[config.eventID];
+  var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
+  if (!Array.isArray(sampleData) || sampleData.length === 0) {
+    showNoRankingData();
+    return;
+  }
+
+  var time = Math.max(0, Math.min(Number(slider.value) - 1, sampleData.length - 1));
+  var sample = sampleData[time];
+  if (!sample) return;
+
+  setTimeText(sample.summaryTime);
+  updateHTML(time);
+}
+
+function showNoRankingData() {
+  setTimeText("선택한 이벤트의 기록 데이터가 없습니다.");
+  ["main_table", "predict_table", "ranking_table"].forEach(function (id) {
+    document.getElementById(id).innerHTML =
+      "<tbody><tr><td class=\"empty-state\" colspan=\"6\">아직 표시할 기록이 없습니다.</td></tr></tbody>";
+  });
 }
 
 async function getDataAPICached(eventID) {
-  var xhttp = new XMLHttpRequest();
   var returnData = {};
-  xhttp.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      var response = JSON.parse(this.responseText);
-      for (const [characterID, result_per_eventID_characterId] of Object.entries(response)) {
-        var returnData_per_eventID_characterID = {};
-        for (let i=0; i<result_per_eventID_characterId.length; i++) {
-          var result_per_eventID_characterId_rank = result_per_eventID_characterId[i];
-          // loop through data
-          for (let j=0; j<result_per_eventID_characterId_rank["data"].length; j++) {
-            let ms = 1000 * 60 * 30;  // round to nearest 30 min
-            let originalDate = Date.parse(result_per_eventID_characterId_rank["data"][j]["summaryTime"]);
-            let roundedDate = new Date(Math.round(originalDate / ms) * ms);
-            result_per_eventID_characterId_rank["data"][j]["summaryTime"] = roundedDate;
-          }
-          returnData_per_eventID_characterID[result_per_eventID_characterId_rank["rank"]] = result_per_eventID_characterId_rank["data"];
-        }
-        returnData[characterID - 1] = returnData_per_eventID_characterID;
-      }
-    }
-  };
+  var url = `./results/${eventID}/rank.json`;
 
-  var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventID}/rank.json`;
-  xhttp.open("GET", url, false);
-  xhttp.setRequestHeader("Content-type", "text/plain");
-  xhttp.send();
+  try {
+    var response = await fetch(url, { cache: "no-cache" });
+    if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+
+    var rankingsByCharacter = await response.json();
+    for (const [characterID, rankings] of Object.entries(rankingsByCharacter)) {
+      var characterData = {};
+      for (const ranking of rankings) {
+        for (const point of ranking.data) {
+          var roundedTime = new Date(point.summaryTime);
+          var interval = 1000 * 60 * 30;
+          point.summaryTime = new Date(Math.round(roundedTime.getTime() / interval) * interval);
+        }
+        characterData[ranking.rank] = ranking.data;
+      }
+      returnData[Number(characterID) - 1] = characterData;
+    }
+  } catch (error) {
+    console.info(`No bundled rankings for event ${eventID}.`, error);
+  }
 
   data_all_all[eventID] = returnData;
   return returnData;
 }
 
-async function getAllData(waitTime) {
-  var eventID = config["eventID"];
+async function getAllData() {
+  var eventID = config.eventID;
   if (!(eventID in data_all_all)) {
-    var idols = config["idols"];
-    getDataAPICached(eventID);
-//    data_all_all[eventID] = {};
-//    for (let i = 0; i < idols.length; i++) {
-//      if (config["eventID"] === configs[configs.length-1]["eventID"]) {
-//        await sleep(waitTime);
-//      }
-//      else {  // sleep less for cached result in shinycolors.info
-//        await sleep(100);
-//      }
-//      var key_ranks_str = config["key_ranks"].join(",");
-//      await getDataAPI(config["eventID"], i + 1, key_ranks_str, key);
-//    }
+    await getDataAPICached(eventID);
   }
 }
 
@@ -305,23 +321,29 @@ async function updateTimeSliderText() {
 
 async function resetTimeSlider() {
   var slider = document.getElementById("timeRange");
-  var key_ranks = config["key_ranks"];
-  var eventID = config["eventID"];
+  var eventData = data_all_all[config.eventID];
+  var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
+  if (!Array.isArray(sampleData) || sampleData.length === 0) {
+    slider.min = 1;
+    slider.max = 1;
+    slider.value = 1;
+    slider.disabled = true;
+    showNoRankingData();
+    return;
+  }
 
-  var sample_data = data_all_all[eventID][0][key_ranks[0]];
-  slider.max = sample_data.length;
-  slider.value = sample_data.length;
-  var time = sample_data[slider.value - 1]["summaryTime"];
-  setTimeText(time);
+  slider.disabled = false;
+  slider.min = 1;
+  slider.max = sampleData.length;
+  slider.value = sampleData.length;
+  setTimeText(sampleData[sampleData.length - 1].summaryTime);
 }
 
 async function buildTimeSlider() {
-  await resetTimeSlider();
-
   var slider = document.getElementById("timeRange");
-  slider.addEventListener("input", async function () {
-    await update();
-  });
+  slider.addEventListener("input", update);
+  slider.addEventListener("change", update);
+  await resetTimeSlider();
 }
 
 ////////////////////////////
