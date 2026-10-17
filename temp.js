@@ -15,6 +15,7 @@ function numberRemoveCommas(x) {
 }
 
 rank_kinds = 4;
+var SHINY_PCUP_BASE_URL = "https://shinycolors.info/utils/shiny_pcup";
 
 idolNames = [
   "마노",
@@ -338,7 +339,7 @@ function showNoRankingData() {
 
 async function getDataAPICached(eventID) {
   var returnData = {};
-  var url = `./results/${eventID}/rank.json`;
+  var url = `${SHINY_PCUP_BASE_URL}/results/${eventID}/rank.json`;
 
   try {
     var response = await fetch(url, { cache: "no-cache" });
@@ -395,7 +396,7 @@ async function getDataAPI(eventID, characterID, ranks, key) {
     var url = `https://api.matsurihi.me/sc/v1/events/fanRanking/${eventID}/rankings/logs/${characterID}/${ranks}`;
   }
   else {
-    var url = `https://shinycolors.info/utils/shiny_pcup/results/${eventID}/${characterID}/${ranks}.json`;
+    var url = `${SHINY_PCUP_BASE_URL}/results/${eventID}/${characterID}/${ranks}.json`;
   }
   xhttp.open("GET", url, false);
   xhttp.setRequestHeader("Content-type", "text/plain");
