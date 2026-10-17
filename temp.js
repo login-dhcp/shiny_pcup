@@ -150,6 +150,7 @@ var currentLanguage = "ko";
 var previousEventEstimateEnabled = false;
 var previousEstimateConfig = null;
 var logScaleEnabled = true;
+var rankTrendEnabled = false;
 var englishIdolNames = [
   "Mano", "Hiori", "Meguru", "Kogane", "Mamimi", "Sakuya", "Yuika", "Kiriko",
   "Kaho", "Chiyoko", "Juri", "Rinze", "Natsuha", "Amana", "Tenka", "Chiyuki",
@@ -181,6 +182,8 @@ var translations = {
     previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
     loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
     linearScaleButton: "선형 축으로 보기", logScaleButton: "로그 축으로 보기",
+    logScaleToggleLabel: "로그 축", previousEstimateToggleLabel: "이전 이벤트 기준 예상", rankTrendToggleLabel: "등수 추이만 보기",
+    idolRank: "아이돌 등수", rankTrendNote: "각 선은 선택한 아이돌의 등수 변화입니다. 숫자가 작을수록 높은 등수입니다.",
     timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "휴식 타이머", timerDescription: "화면을 눌러 다음 동작까지의 시간을 확인하세요.",
     timerShortcuts: "키보드 조작을 켜면 Space / Enter: 진행 · Esc: 초기화 · R: 랩 시작 · S: 랩 정지 · C: 랩 기록 삭제", timerReady: "준비", timerTapLabel: "타이머 진행",
     timerDescriptionTitle: "타이머 설명 및 단축키", keyboardEnable: "키보드 조작 켜기", keyboardDisable: "키보드 조작 끄기",
@@ -219,6 +222,8 @@ var translations = {
     previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
     loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
     linearScaleButton: "Use linear scale", logScaleButton: "Use log scale",
+    logScaleToggleLabel: "Log scale", previousEstimateToggleLabel: "Estimate from previous event", rankTrendToggleLabel: "Rank trends only",
+    idolRank: "Idol rank", rankTrendNote: "Each line shows the selected idol’s rank over time. Lower numbers indicate a higher rank.",
     timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "Break timer", timerDescription: "Tap the timer to track the wait between actions.",
     timerShortcuts: "Enable keyboard controls: Space / Enter: count · Esc: reset · R: start lap · S: stop lap · C: clear lap history", timerReady: "Ready", timerTapLabel: "Advance timer",
     timerDescriptionTitle: "Timer guide and shortcuts", keyboardEnable: "Enable keyboard controls", keyboardDisable: "Disable keyboard controls",
@@ -381,6 +386,15 @@ function initLanguageSelector() {
   document.getElementById("scaleModeToggle").addEventListener("click", function () {
     logScaleEnabled = !logScaleEnabled;
     updateScaleModeButton();
+    updateTrendChart();
+  });
+  document.getElementById("rankTrendToggle").addEventListener("click", function () {
+    rankTrendEnabled = !rankTrendEnabled;
+    this.setAttribute("aria-pressed", String(rankTrendEnabled));
+    if (rankTrendEnabled) logScaleEnabled = false;
+    updateScaleModeButton();
+    document.getElementById("scaleModeToggle").disabled = rankTrendEnabled;
+    document.getElementById("estimateModeToggle").disabled = rankTrendEnabled;
     updateTrendChart();
   });
   updateScaleModeButton();
@@ -716,7 +730,7 @@ async function togglePreviousEventEstimate() {
   }
   var currentIndex = configs.indexOf(config);
   button.disabled = true;
-  button.textContent = t("loadingPreviousEvent");
+  document.getElementById("estimateModeToggleLabel").textContent = t("loadingPreviousEvent");
   for (var i = currentIndex - 1; i >= 0; i--) {
     var candidate = configs[i];
     if (!data_all_all[candidate.eventID]) {
@@ -743,19 +757,20 @@ async function togglePreviousEventEstimate() {
 function updateEstimateModeButton() {
   var button = document.getElementById("estimateModeToggle");
   if (!button) return;
-  button.textContent = previousEventEstimateEnabled ? t("currentEstimateButton") : t("previousEstimateButton");
   button.setAttribute("aria-pressed", String(previousEventEstimateEnabled));
+  document.getElementById("estimateModeToggleLabel").textContent = t("previousEstimateToggleLabel");
 }
 
 function updateScaleModeButton() {
   var button = document.getElementById("scaleModeToggle");
   if (!button) return;
-  button.textContent = logScaleEnabled ? t("linearScaleButton") : t("logScaleButton");
   button.setAttribute("aria-pressed", String(logScaleEnabled));
 }
 
 function updateTrendChart(selectedTime) {
   if (!window.Plotly) return;
+  var note = document.querySelector(".chart-note");
+  if (note) note.textContent = t(rankTrendEnabled ? "rankTrendNote" : "chartNote");
   var chartElement = document.getElementById("trendChart");
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
@@ -782,6 +797,50 @@ function updateTrendChart(selectedTime) {
   var traces = [];
 
   var idolName = getIdolName(idolIndex);
+  if (rankTrendEnabled) {
+    for (var rankTrendIndex = 0; rankTrendIndex < config.key_ranks.length; rankTrendIndex++) {
+      var tier = config.key_ranks[rankTrendIndex];
+      var rankX = [];
+      var rankY = [];
+      for (var rankTime = 0; rankTime <= timeIndex; rankTime++) {
+        var selectedRankLog = getRankLogAtTime(idolData && idolData[tier], rankTime, referenceLength);
+        var selectedRankTime = selectedRankLog && Date.parse(selectedRankLog.summaryTime);
+        if (!selectedRankLog || !Number.isFinite(selectedRankTime) || selectedRankTime > cutoff) continue;
+        var scoresAtTime = [];
+        for (var otherIdolIndex = 0; otherIdolIndex < config.idols.length; otherIdolIndex++) {
+          var otherIdolData = eventData[otherIdolIndex];
+          var otherLog = getRankLogAtTime(otherIdolData && otherIdolData[tier], rankTime, referenceLength);
+          var otherScore = otherLog && Number(otherLog.score);
+          if (otherLog && Number.isFinite(otherScore)) scoresAtTime.push(otherScore);
+        }
+        var targetScore = Number(selectedRankLog.score);
+        if (!Number.isFinite(targetScore) || !scoresAtTime.includes(targetScore)) continue;
+        scoresAtTime.sort(function (a, b) { return a - b; });
+        var previousRankPoint = rankX.length - 1;
+        var targetRank = scoresAtTime.length - scoresAtTime.indexOf(targetScore);
+        if (previousRankPoint >= 0 && Date.parse(rankX[previousRankPoint]) === selectedRankTime) rankY[previousRankPoint] = targetRank;
+        else { rankX.push(selectedRankLog.summaryTime); rankY.push(targetRank); }
+      }
+      if (!rankX.length) continue;
+      var rankSeriesName = `${t("rankLabel")} ${tier}`;
+      traces.push({
+        type: "scatter", mode: "lines", name: rankSeriesName, x: rankX, y: rankY,
+        line: { color: palette[rankTrendIndex % palette.length], width: 2 },
+        hovertemplate: `${idolName} · ${rankSeriesName}<br>%{x|%Y-%m-%d %H:%M}<br>#%{y}<extra></extra>`,
+      });
+    }
+    Plotly.react(chartElement, traces, {
+      autosize: true, height: 590,
+      margin: { t: 18, r: 24, b: 65, l: 78 },
+      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+      font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
+      hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}-rank`,
+      xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false },
+      yaxis: { title: { text: t("idolRank") }, type: logScaleEnabled ? "log" : "linear", autorange: "reversed", dtick: logScaleEnabled ? undefined : 1, gridcolor: "#eceaf0", zeroline: false },
+      legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
+    }, { responsive: true, displaylogo: false });
+    return;
+  }
   for (var rankIndex = 0; rankIndex < config.key_ranks.length; rankIndex++) {
     var rank = config.key_ranks[rankIndex];
     var rankData = idolData && idolData[rank];
