@@ -568,7 +568,7 @@ function updateTrendChart(selectedTime) {
     font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
     hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}`,
     xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false },
-    yaxis: { title: { text: t("chartY") }, rangemode: "tozero", gridcolor: "#eceaf0", zeroline: false },
+    yaxis: { title: { text: t("chartY") }, type: "log", gridcolor: "#eceaf0", zeroline: false },
     legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
   }, { responsive: true, displaylogo: false });
 }
