@@ -176,7 +176,8 @@ var translations = {
     topRank: "상위", upperRank: "중상위", lowerRank: "중하위", bottomRank: "하위",
     lastUpdated: "최신 업데이트", disclaimer: "본 사이트는 BANDAI NAMCO 및 BXD와 무관한 팬 제작 페이지입니다. 이미지와 관련 지적 재산권은 해당 권리자에게 있습니다.",
     dataSource: "랭킹 데이터 제공", author: "제작", recordedAt: "기록 시간", noData: "선택한 이벤트의 기록 데이터가 없습니다.",
-    noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
+    noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각 (UTC+9)", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
+    finishedToast: "완료되었습니다.",
     languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위",
     eventNotStarted: "아직 시작하지 않은 이벤트입니다.",
     previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
@@ -216,7 +217,8 @@ var translations = {
     topRank: "Top", upperRank: "Upper", lowerRank: "Lower", bottomRank: "Bottom",
     lastUpdated: "Last updated", disclaimer: "This fan-made site is not affiliated with BANDAI NAMCO or BXD. Images and related intellectual property belong to their respective owners.",
     dataSource: "Ranking data", author: "Made by", recordedAt: "Recorded", noData: "No ranking data is available for the selected event.",
-    noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp", chartY: "Fan count", chartLoading: "Loading chart data",
+    noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp (UTC+9)", chartY: "Fan count", chartLoading: "Loading chart data",
+    finishedToast: "Finished!",
     languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank",
     eventNotStarted: "This event has not started yet.",
     previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
@@ -303,7 +305,7 @@ function initializeBreakTimer() {
     }
     timer.laps.slice().reverse().forEach(function (lap, index) {
       var row = document.createElement("div"); row.className = "stopwatch-result-row";
-      var when = document.createElement("time"); when.dateTime = new Date(lap.start).toISOString(); when.textContent = new Date(lap.start).toLocaleString(currentLanguage === "ko" ? "ko-KR" : "en-US");
+      var when = document.createElement("time"); when.dateTime = new Date(lap.start).toISOString(); when.textContent = formatTokyoTimestamp(lap.start);
       var duration = document.createElement("strong"); duration.textContent = formatClock(lap.end - lap.start, false);
       row.append(when, duration); row.setAttribute("aria-label", t("stopwatchResults") + " " + (timer.laps.length - index)); results.appendChild(row);
     });
@@ -431,8 +433,20 @@ function updateEventOptionLabels() {
   });
 }
 
-async function alertFinished() {
-  alert("Finished!");
+var completionToastTimeout;
+var completionToastHideTimeout;
+function showFinishedToast() {
+  var toast = document.getElementById("completionToast");
+  if (!toast) return;
+  window.clearTimeout(completionToastTimeout);
+  window.clearTimeout(completionToastHideTimeout);
+  toast.textContent = t("finishedToast");
+  toast.hidden = false;
+  requestAnimationFrame(function () { toast.classList.add("is-visible"); });
+  completionToastTimeout = window.setTimeout(function () {
+    toast.classList.remove("is-visible");
+    completionToastHideTimeout = window.setTimeout(function () { toast.hidden = true; }, 250);
+  }, 2400);
 }
 
 async function init() {
@@ -451,7 +465,7 @@ async function init() {
   await buildTimeSlider();
   initializeTrendControls();
   update();
-  await alertFinished();
+  showFinishedToast();
 }
 
 function hasRankingData(eventConfig) {
@@ -605,7 +619,7 @@ function buildEventIDSelector() {
       initializeTrendControls();
       await resetTimeSlider();
       await update();
-      await alertFinished();
+      showFinishedToast();
     });
 }
 
@@ -825,20 +839,22 @@ function updateTrendChart(selectedTime) {
       var rankSeriesName = `${t("rankLabel")} ${tier}`;
       traces.push({
         type: "scatter", mode: "lines", name: rankSeriesName, x: rankX, y: rankY,
+        customdata: rankX.map(function (value) { return formatTokyoTimestamp(value); }),
         line: { color: palette[rankTrendIndex % palette.length], width: 2 },
-        hovertemplate: `${idolName} · ${rankSeriesName}<br>%{x|%Y-%m-%d %H:%M}<br>#%{y}<extra></extra>`,
+        hovertemplate: `${idolName} · ${rankSeriesName}<br>%{customdata}<br>#%{y}<extra></extra>`,
       });
     }
+    chartElement._tokyoAxisTimes = traces.flatMap(function (trace) { return trace.x; });
     Plotly.react(chartElement, traces, {
       autosize: true, height: 590,
       margin: { t: 18, r: 24, b: 65, l: 78 },
       paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
       font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
       hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}-rank`,
-      xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false },
+      xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes) },
       yaxis: { title: { text: t("idolRank") }, type: logScaleEnabled ? "log" : "linear", autorange: "reversed", dtick: logScaleEnabled ? undefined : 1, gridcolor: "#eceaf0", zeroline: false },
       legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
-    }, { responsive: true, displaylogo: false });
+    }, { responsive: true, displaylogo: false }).then(function () { bindTokyoAxisZoom(chartElement); });
     return;
   }
   for (var rankIndex = 0; rankIndex < config.key_ranks.length; rankIndex++) {
@@ -867,8 +883,8 @@ function updateTrendChart(selectedTime) {
     var seriesName = `${t("rankLabel")} ${rank}`;
     traces.push({
       type: "scatter", mode: "lines", name: seriesName, legendgroup: seriesName,
-      x: trendX, y: trendY, line: { color: color, width: 2 },
-      hovertemplate: `${idolName} · ${seriesName}<br>%{x|%Y-%m-%d %H:%M}<br>%{y:,.0f}<extra></extra>`,
+      x: trendX, y: trendY, customdata: trendX.map(function (value) { return formatTokyoTimestamp(value); }), line: { color: color, width: 2 },
+      hovertemplate: `${idolName} · ${seriesName}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
     });
 
     var projectedScore = estimateEndScore(currentLog.score, currentLog.summaryTime, idolIndex, rank);
@@ -876,22 +892,24 @@ function updateTrendChart(selectedTime) {
       type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
       legendgroup: seriesName, showlegend: false,
       x: [currentLog.summaryTime, config.endTime], y: [Number(currentLog.score), projectedScore],
+      customdata: [currentLog.summaryTime, config.endTime].map(function (value) { return formatTokyoTimestamp(value); }),
       line: { color: color, width: 1.5, dash: "dot" },
       marker: { color: color, size: 7, symbol: "diamond" },
-      hovertemplate: `${idolName} · ${seriesName} · ${t("forecast")}<br>%{x|%Y-%m-%d %H:%M}<br>%{y:,.0f}<extra></extra>`,
+      hovertemplate: `${idolName} · ${seriesName} · ${t("forecast")}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
     });
   }
 
+  chartElement._tokyoAxisTimes = traces.flatMap(function (trace) { return trace.x; });
   Plotly.react(chartElement, traces, {
     autosize: true, height: 590,
     margin: { t: 18, r: 24, b: 65, l: 78 },
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
     font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
     hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}`,
-    xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false },
+    xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes) },
     yaxis: { title: { text: t("chartY") }, type: logScaleEnabled ? "log" : "linear", gridcolor: "#eceaf0", zeroline: false },
     legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
-  }, { responsive: true, displaylogo: false });
+  }, { responsive: true, displaylogo: false }).then(function () { bindTokyoAxisZoom(chartElement); });
 }
 
 ////////////////////////////
@@ -945,7 +963,7 @@ async function buildBasicTable(time) {
       if (data_final_log === undefined) {
         data_final_log = {"score": 1, "summaryTime": time};
       }
-      code += `<td>${numberWithCommas(data_final_log["score"])}</td>\n`;
+      code += `<td class="numeric-cell">${numberWithCommas(data_final_log["score"])}</td>\n`;
     }
     code += "</tr>\n";
   }
@@ -1002,7 +1020,7 @@ async function buildPredictionTable(time) {
       var score = data_final_log["score"];
       var timeString = data_final_log["summaryTime"];
       score = estimateEndScore(score, timeString, i, rank);
-      code += `<td>${numberWithCommas(parseInt(score))}</td>\n`;
+      code += `<td class="numeric-cell">${numberWithCommas(parseInt(score))}</td>\n`;
     }
     code += "</tr>\n";
   }
@@ -1042,7 +1060,7 @@ async function buildRankingTable(time) {
       sorted_values.sort(function (a, b) {
         return a - b;
       });
-      code += `<td>${numberWithCommas(
+      code += `<td class="numeric-cell">${numberWithCommas(
         sorted_values.length - sorted_values.indexOf(column_values[i])
       )}</td>\n`;
     }
@@ -1074,11 +1092,52 @@ function timeDiff(start, end) {
   return (Date.parse(end) - Date.parse(start)) / 1000 / 60 / 60;
 }
 
+function formatTokyoTimestamp(value, short = false) {
+  var parsedDate = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(parsedDate.getTime())) return String(value);
+  var formatted = new Intl.DateTimeFormat(currentLanguage === "ko" ? "ko-KR" : "en-US", {
+    timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", ...(short ? {} : { second: "2-digit" }), hourCycle: "h23",
+  }).format(parsedDate);
+  return short ? formatted : `${formatted} UTC+9`;
+}
+
+function getTokyoAxisTicks(times, rangeStart, rangeEnd) {
+  var validTimes = (times || []).map(function (value) { return Date.parse(value); }).filter(Number.isFinite);
+  var minTime = rangeStart === undefined ? Math.min.apply(null, validTimes) : Date.parse(rangeStart);
+  var maxTime = rangeEnd === undefined ? Math.max.apply(null, validTimes) : Date.parse(rangeEnd);
+  if (!Number.isFinite(minTime) || !Number.isFinite(maxTime)) return { tickmode: "auto" };
+  var count = minTime === maxTime ? 1 : 6;
+  var tickvals = [];
+  var ticktext = [];
+  for (var i = 0; i < count; i++) {
+    var timestamp = count === 1 ? minTime : minTime + (maxTime - minTime) * i / (count - 1);
+    tickvals.push(new Date(timestamp).toISOString());
+    ticktext.push(formatTokyoTimestamp(timestamp, true));
+  }
+  return { tickmode: "array", tickvals: tickvals, ticktext: ticktext };
+}
+
+function bindTokyoAxisZoom(chartElement) {
+  if (chartElement.dataset.tokyoAxisBound || typeof chartElement.on !== "function") return;
+  chartElement.dataset.tokyoAxisBound = "true";
+  chartElement.on("plotly_relayout", function (eventData) {
+    var range = eventData["xaxis.range"];
+    var start = eventData["xaxis.range[0]"] || (Array.isArray(range) ? range[0] : undefined);
+    var end = eventData["xaxis.range[1]"] || (Array.isArray(range) ? range[1] : undefined);
+    if (!Array.isArray(range) && !(start !== undefined && end !== undefined) && !eventData["xaxis.autorange"]) return;
+    var tickConfig = getTokyoAxisTicks(chartElement._tokyoAxisTimes, start, end);
+    Plotly.relayout(chartElement, {
+      "xaxis.tickmode": tickConfig.tickmode,
+      "xaxis.tickvals": tickConfig.tickvals || [],
+      "xaxis.ticktext": tickConfig.ticktext || [],
+    });
+  });
+}
+
 function setTimeText(time) {
   var parsedTime = time instanceof Date ? time : new Date(time);
-  var localeTime = Number.isFinite(parsedTime.getTime())
-    ? parsedTime.toLocaleString(currentLanguage === "ko" ? "ko-KR" : "en-US")
-    : String(time);
+  var localeTime = formatTokyoTimestamp(parsedTime);
   var container = document.getElementById("timeText");
   var icon = document.createElement("span");
   icon.className = "time-icon";
