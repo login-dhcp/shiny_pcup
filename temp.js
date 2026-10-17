@@ -161,11 +161,11 @@ var translations = {
   ko: {
     documentTitle: "샤이니컬러즈 프로듀서컵", wiki: "위키", source: "소스", pageTitle: "프로듀서컵 기록실", navigation: "주요 링크",
     introText: "아이돌별 팬 랭킹 점수의 흐름과 종료 예상치를 한눈에 확인하세요.", dataBadge: "기록 데이터",
-    controlsLabel: "기록 조회 설정", eventArchive: "이벤트 기록", controlsTitle: "이벤트와 기록 시점 선택",
-    loadingTime: "기록 시점을 불러오는 중", eventSelect: "이벤트 선택", viewEvent: "이벤트 보기",
+    controlsLabel: "기록 조회 설정", eventArchive: "이벤트 기록", controlsTitle: "이벤트 선택",
+    eventStart: "시작", eventEnd: "종료", eventSelect: "이벤트 선택", viewEvent: "이벤트 보기",
     earliest: "시작 기록", latest: "최신 기록", timelineLabel: "기록 시점", helpTitle: "이 페이지 이용 안내",
     helpLine1: "표는 왼쪽부터 현재 점수, 종료 시점 예상 점수, 현재 등수를 보여줍니다.",
-    helpLine2: "이벤트를 고른 뒤 이벤트 보기를 누르고, 슬라이더로 기록 시점을 이동하세요.",
+    helpLine2: "이벤트를 고른 뒤 이벤트 보기를 누르고, 표 아래 슬라이더로 기록 시점을 이동하세요.",
     helpLine3: "데이터 로딩에 몇 초 걸릴 수 있습니다. 오래 기다려도 표시되지 않으면 새로고침해 주세요.",
     chartSectionLabel: "점수 추이 차트", chartEyebrow: "SCORE TRENDS", chartTitle: "아이돌 점수 추이와 종료 예상",
     chartRank: "순위 구간", chartNote: "실선은 기록된 점수, 점선은 이벤트 종료 시점 예상 점수입니다.",
@@ -202,11 +202,11 @@ var translations = {
   en: {
     documentTitle: "Shiny Colors Producer Cup", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
     introText: "Explore fan-ranking score trends and projected event-end scores for every idol.", dataBadge: "Ranking data",
-    controlsLabel: "Archive controls", eventArchive: "EVENT ARCHIVE", controlsTitle: "Choose an event and timestamp",
-    loadingTime: "Loading timestamp", eventSelect: "Select event", viewEvent: "View event",
+    controlsLabel: "Archive controls", eventArchive: "EVENT ARCHIVE", controlsTitle: "Choose an event",
+    eventStart: "Start", eventEnd: "End", eventSelect: "Select event", viewEvent: "View event",
     earliest: "Earliest record", latest: "Latest record", timelineLabel: "Record timestamp", helpTitle: "How to use this page",
     helpLine1: "The tables show current scores, projected end scores, and current ranks from left to right.",
-    helpLine2: "Choose an event, select View event, then move the slider to browse its history.",
+    helpLine2: "Choose an event, select View event, then use a table slider to browse its history.",
     helpLine3: "Loading can take a few seconds. Refresh if the data does not appear.",
     chartSectionLabel: "Score trend chart", chartEyebrow: "SCORE TRENDS", chartTitle: "Idol score trends and end estimates",
     chartRank: "Rank tier", chartNote: "Solid lines show recorded scores; dotted lines show projections to event end.",
@@ -483,11 +483,12 @@ function updateHTML(time) {
 }
 
 function update() {
-  var slider = document.getElementById("timeRange");
+  var slider = document.getElementById("scoreTimeRange");
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
     syncTimeSliders(slider.min || 1, slider.max || 1, slider.value || 1, true);
+    updateEventPeriod();
     showNoRankingData();
     return;
   }
@@ -497,13 +498,13 @@ function update() {
   var sample = sampleData[time];
   if (!sample) return;
 
-  setTimeText(sample.summaryTime);
+  updateEventPeriod();
   updateHTML(time);
-  updateTrendChart(time);
+  updateTrendChart();
 }
 
 function showNoRankingData() {
-  setTimeText(t("noData"));
+  updateEventPeriod();
   ["main_table", "predict_table", "ranking_table"].forEach(function (id) {
     document.getElementById(id).innerHTML =
       `<tbody><tr><td class=\"empty-state\" colspan=\"6\">${t("noRows")}</td></tr></tbody>`;
@@ -623,18 +624,8 @@ function buildEventIDSelector() {
     });
 }
 
-async function updateTimeSliderText() {
-  var slider = document.getElementById("timeRange");
-  var key_ranks = config["key_ranks"];
-  var eventID = config["eventID"];
-
-  var sample_data = data_all_all[eventID][0][key_ranks[0]];
-  var time = sample_data[slider.value - 1]["summaryTime"];
-  setTimeText(time);
-}
-
 async function resetTimeSlider() {
-  var slider = document.getElementById("timeRange");
+  var slider = document.getElementById("scoreTimeRange");
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
@@ -644,13 +635,11 @@ async function resetTimeSlider() {
   }
 
   syncTimeSliders(1, sampleData.length, sampleData.length, false);
-  setTimeText(sampleData[sampleData.length - 1].summaryTime);
+  updateEventPeriod();
 }
 
 async function buildTimeSlider() {
-  var slider = document.getElementById("timeRange");
-  slider.addEventListener("input", update);
-  slider.addEventListener("change", update);
+  var slider = document.getElementById("scoreTimeRange");
   document.querySelectorAll(".table-time-range").forEach(function (tableSlider) {
     tableSlider.addEventListener("input", function () {
       slider.value = tableSlider.value;
@@ -665,7 +654,7 @@ async function buildTimeSlider() {
 }
 
 function syncTimeSliders(minimum, maximum, value, disabled) {
-  document.querySelectorAll("#timeRange, .table-time-range").forEach(function (slider) {
+  document.querySelectorAll(".table-time-range").forEach(function (slider) {
     slider.min = minimum;
     slider.max = maximum;
     slider.value = value;
@@ -781,11 +770,14 @@ function updateScaleModeButton() {
   button.setAttribute("aria-pressed", String(logScaleEnabled));
 }
 
-function updateTrendChart(selectedTime) {
+function updateTrendChart() {
   if (!window.Plotly) return;
   var note = document.querySelector(".chart-note");
   if (note) note.textContent = t(rankTrendEnabled ? "rankTrendNote" : "chartNote");
   var chartElement = document.getElementById("trendChart");
+  var eventWindow = [toPlotlyDate(config.startTime), toPlotlyDate(config.endTime)];
+  var eventStartTimestamp = Date.parse(eventWindow[0]);
+  var eventEndTimestamp = Date.parse(eventWindow[1]);
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
@@ -802,11 +794,11 @@ function updateTrendChart(selectedTime) {
   var idolIndex = Number(idolSelect.value || 0);
   var idolData = eventData[idolIndex];
   var referenceLength = sampleData.length;
-  var timeIndex = selectedTime === undefined
-    ? Math.max(0, Math.min(Number(document.getElementById("timeRange").value) - 1, referenceLength - 1))
-    : Math.max(0, Math.min(selectedTime, referenceLength - 1));
+  // Trends always show the complete history; table sliders only select the
+  // snapshot used by the score and ranking tables.
+  var timeIndex = referenceLength - 1;
   var selectedPoint = sampleData[timeIndex];
-  var cutoff = Date.parse(selectedPoint.summaryTime);
+  var cutoff = Math.min(Date.parse(selectedPoint.summaryTime), eventEndTimestamp);
   var palette = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#ff9da7", "#9c755f", "#bab0ab", "#6f4e7c", "#2f7f9d", "#cc6677", "#447744", "#aa4499", "#ddaa33", "#6699cc", "#884400", "#117755", "#882255", "#888844", "#44aa99", "#9955bb", "#cc6677", "#669944", "#ee7733", "#4477aa", "#aa3377"];
   var traces = [];
 
@@ -819,7 +811,7 @@ function updateTrendChart(selectedTime) {
       for (var rankTime = 0; rankTime <= timeIndex; rankTime++) {
         var selectedRankLog = getRankLogAtTime(idolData && idolData[tier], rankTime, referenceLength);
         var selectedRankTime = selectedRankLog && Date.parse(selectedRankLog.summaryTime);
-        if (!selectedRankLog || !Number.isFinite(selectedRankTime) || selectedRankTime > cutoff) continue;
+        if (!selectedRankLog || !Number.isFinite(selectedRankTime) || selectedRankTime < eventStartTimestamp || selectedRankTime > eventEndTimestamp || selectedRankTime > cutoff) continue;
         var scoresAtTime = [];
         for (var otherIdolIndex = 0; otherIdolIndex < config.idols.length; otherIdolIndex++) {
           var otherIdolData = eventData[otherIdolIndex];
@@ -838,7 +830,7 @@ function updateTrendChart(selectedTime) {
       if (!rankX.length) continue;
       var rankSeriesName = `${t("rankLabel")} ${tier}`;
       traces.push({
-        type: "scatter", mode: "lines", name: rankSeriesName, x: rankX, y: rankY,
+        type: "scatter", mode: "lines", name: rankSeriesName, x: rankX.map(toPlotlyDate), y: rankY,
         customdata: rankX.map(function (value) { return formatTokyoTimestamp(value); }),
         line: { color: palette[rankTrendIndex % palette.length], width: 2 },
         hovertemplate: `${idolName} · ${rankSeriesName}<br>%{customdata}<br>#%{y}<extra></extra>`,
@@ -850,11 +842,17 @@ function updateTrendChart(selectedTime) {
       margin: { t: 18, r: 24, b: 65, l: 78 },
       paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
       font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
-      hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}-rank`,
-      xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes) },
+      hovermode: "closest", uirevision: `${config.eventID}-${config.startTime}-${config.endTime}-${idolIndex}-rank`,
+      xaxis: { title: { text: t("chartX") }, type: "date", range: eventWindow, autorange: false, fixedrange: true, gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes, eventWindow[0], eventWindow[1]) },
       yaxis: { title: { text: t("idolRank") }, type: logScaleEnabled ? "log" : "linear", autorange: "reversed", dtick: logScaleEnabled ? undefined : 1, gridcolor: "#eceaf0", zeroline: false },
       legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
-    }, { responsive: true, displaylogo: false }).then(function () { bindTokyoAxisZoom(chartElement); });
+    }, { responsive: true, displaylogo: false }).then(function () {
+      return Plotly.relayout(chartElement, {
+        "xaxis.range": eventWindow,
+        "xaxis.autorange": false,
+        "xaxis.fixedrange": true,
+      });
+    });
     return;
   }
   for (var rankIndex = 0; rankIndex < config.key_ranks.length; rankIndex++) {
@@ -867,7 +865,7 @@ function updateTrendChart(selectedTime) {
     for (var time = 0; time <= timeIndex; time++) {
       var log = getRankLogAtTime(rankData, time, referenceLength);
       var logTime = log && Date.parse(log.summaryTime);
-      if (!log || !Number.isFinite(logTime) || logTime > cutoff) continue;
+      if (!log || !Number.isFinite(logTime) || logTime < eventStartTimestamp || logTime > eventEndTimestamp || logTime > cutoff) continue;
       var previous = trendX.length - 1;
       if (previous >= 0 && Date.parse(trendX[previous]) === logTime) {
         trendY[previous] = Number(log.score);
@@ -877,13 +875,13 @@ function updateTrendChart(selectedTime) {
       }
     }
 
-    var currentLog = getRankLogAtTime(rankData, timeIndex, referenceLength);
-    if (!currentLog || trendX.length === 0) continue;
+    if (trendX.length === 0) continue;
+    var currentLog = { summaryTime: trendX[trendX.length - 1], score: trendY[trendY.length - 1] };
     var color = palette[rankIndex % palette.length];
     var seriesName = `${t("rankLabel")} ${rank}`;
     traces.push({
       type: "scatter", mode: "lines", name: seriesName, legendgroup: seriesName,
-      x: trendX, y: trendY, customdata: trendX.map(function (value) { return formatTokyoTimestamp(value); }), line: { color: color, width: 2 },
+      x: trendX.map(toPlotlyDate), y: trendY, customdata: trendX.map(function (value) { return formatTokyoTimestamp(value); }), line: { color: color, width: 2 },
       hovertemplate: `${idolName} · ${seriesName}<br>%{customdata}<br>%{y:,.0f}<extra></extra>`,
     });
 
@@ -891,7 +889,7 @@ function updateTrendChart(selectedTime) {
     traces.push({
       type: "scatter", mode: "lines+markers", name: `${seriesName} · ${t("forecast")}`,
       legendgroup: seriesName, showlegend: false,
-      x: [currentLog.summaryTime, config.endTime], y: [Number(currentLog.score), projectedScore],
+      x: [toPlotlyDate(currentLog.summaryTime), toPlotlyDate(config.endTime)], y: [Number(currentLog.score), projectedScore],
       customdata: [currentLog.summaryTime, config.endTime].map(function (value) { return formatTokyoTimestamp(value); }),
       line: { color: color, width: 1.5, dash: "dot" },
       marker: { color: color, size: 7, symbol: "diamond" },
@@ -905,11 +903,17 @@ function updateTrendChart(selectedTime) {
     margin: { t: 18, r: 24, b: 65, l: 78 },
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
     font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 11, color: "#5b5963" },
-    hovermode: "closest", uirevision: `${config.eventID}-${idolIndex}`,
-    xaxis: { title: { text: t("chartX") }, type: "date", gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes) },
+    hovermode: "closest", uirevision: `${config.eventID}-${config.startTime}-${config.endTime}-${idolIndex}`,
+    xaxis: { title: { text: t("chartX") }, type: "date", range: eventWindow, autorange: false, fixedrange: true, gridcolor: "#eceaf0", zeroline: false, ...getTokyoAxisTicks(chartElement._tokyoAxisTimes, eventWindow[0], eventWindow[1]) },
     yaxis: { title: { text: t("chartY") }, type: logScaleEnabled ? "log" : "linear", gridcolor: "#eceaf0", zeroline: false },
     legend: { orientation: "h", y: -0.22, groupclick: "togglegroup", font: { size: 10 } },
-  }, { responsive: true, displaylogo: false }).then(function () { bindTokyoAxisZoom(chartElement); });
+  }, { responsive: true, displaylogo: false }).then(function () {
+    return Plotly.relayout(chartElement, {
+      "xaxis.range": eventWindow,
+      "xaxis.autorange": false,
+      "xaxis.fixedrange": true,
+    });
+  });
 }
 
 ////////////////////////////
@@ -1102,6 +1106,11 @@ function formatTokyoTimestamp(value, short = false) {
   return short ? formatted : `${formatted} UTC+9`;
 }
 
+function toPlotlyDate(value) {
+  var timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : value;
+}
+
 function getTokyoAxisTicks(times, rangeStart, rangeEnd) {
   var validTimes = (times || []).map(function (value) { return Date.parse(value); }).filter(Number.isFinite);
   var minTime = rangeStart === undefined ? Math.min.apply(null, validTimes) : Date.parse(rangeStart);
@@ -1113,37 +1122,17 @@ function getTokyoAxisTicks(times, rangeStart, rangeEnd) {
   for (var i = 0; i < count; i++) {
     var timestamp = count === 1 ? minTime : minTime + (maxTime - minTime) * i / (count - 1);
     tickvals.push(new Date(timestamp).toISOString());
-    ticktext.push(formatTokyoTimestamp(timestamp, true));
+    ticktext.push(`${formatTokyoTimestamp(timestamp, true)} UTC+9`);
   }
   return { tickmode: "array", tickvals: tickvals, ticktext: ticktext };
 }
 
-function bindTokyoAxisZoom(chartElement) {
-  if (chartElement.dataset.tokyoAxisBound || typeof chartElement.on !== "function") return;
-  chartElement.dataset.tokyoAxisBound = "true";
-  chartElement.on("plotly_relayout", function (eventData) {
-    var range = eventData["xaxis.range"];
-    var start = eventData["xaxis.range[0]"] || (Array.isArray(range) ? range[0] : undefined);
-    var end = eventData["xaxis.range[1]"] || (Array.isArray(range) ? range[1] : undefined);
-    if (!Array.isArray(range) && !(start !== undefined && end !== undefined) && !eventData["xaxis.autorange"]) return;
-    var tickConfig = getTokyoAxisTicks(chartElement._tokyoAxisTimes, start, end);
-    Plotly.relayout(chartElement, {
-      "xaxis.tickmode": tickConfig.tickmode,
-      "xaxis.tickvals": tickConfig.tickvals || [],
-      "xaxis.ticktext": tickConfig.ticktext || [],
-    });
-  });
-}
-
-function setTimeText(time) {
-  var parsedTime = time instanceof Date ? time : new Date(time);
-  var localeTime = formatTokyoTimestamp(parsedTime);
-  var container = document.getElementById("timeText");
-  var icon = document.createElement("span");
-  icon.className = "time-icon";
-  icon.setAttribute("aria-hidden", "true");
-  icon.textContent = "◷";
-  var label = document.createElement("span");
-  label.textContent = `${t("recordedAt")}: ${localeTime}`;
-  container.replaceChildren(icon, label);
+function updateEventPeriod(eventConfig = config) {
+  var start = document.getElementById("eventStartTime");
+  var end = document.getElementById("eventEndTime");
+  if (!start || !end || !eventConfig) return;
+  start.dateTime = new Date(eventConfig.startTime).toISOString();
+  end.dateTime = new Date(eventConfig.endTime).toISOString();
+  start.textContent = formatTokyoTimestamp(eventConfig.startTime);
+  end.textContent = formatTokyoTimestamp(eventConfig.endTime);
 }

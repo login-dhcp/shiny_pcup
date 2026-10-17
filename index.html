@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-17">
+  <link rel="stylesheet" href="./assets/common.css?version=event-bounds-20">
 </head>
 <body>
   <header class="site-header">
@@ -42,7 +42,10 @@
           <p class="section-label" data-i18n="eventArchive">EVENT ARCHIVE</p>
           <h2 data-i18n="controlsTitle">이벤트와 기록 시점 선택</h2>
         </div>
-        <div id="timeText" class="time-chip" aria-live="polite"><span class="time-icon" aria-hidden="true">◷</span><span data-i18n="loadingTime">기록 시점을 불러오는 중</span></div>
+        <div id="eventPeriod" class="time-chip event-period" aria-live="polite">
+          <span><span class="event-period-label" data-i18n="eventStart">시작</span> <time id="eventStartTime"></time></span>
+          <span><span class="event-period-label" data-i18n="eventEnd">종료</span> <time id="eventEndTime"></time></span>
+        </div>
       </div>
       <div class="control-row">
         <label class="select-wrap" for="eventID_select">
@@ -51,10 +54,6 @@
           <span class="select-chevron" aria-hidden="true">⌄</span>
         </label>
         <button id="eventID_select_button" class="select-button" type="button"><span data-i18n="viewEvent">이벤트 보기</span> <span aria-hidden="true">→</span></button>
-      </div>
-      <div class="timeline-wrap">
-        <div class="timeline-labels"><span data-i18n="earliest">시작 기록</span><span data-i18n="latest">최신 기록</span></div>
-        <input type="range" min="1" max="100" value="100" id="timeRange" aria-label="기록 시점" data-i18n-aria="timelineLabel">
       </div>
       <details class="help-details">
         <summary data-i18n="helpTitle">이 페이지 이용 안내</summary>
@@ -159,6 +158,6 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
   <script src="./assets/plotly-4.1.1.min.js" defer></script>
-  <script src="./temp.js?version=language-plotly-17" defer></script>
+  <script src="./temp.js?version=event-bounds-20" defer></script>
 </body>
 </html>
