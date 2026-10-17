@@ -1,2 +1,10 @@
+.DS_STORE
+**/.DS_STORE
+
+.idea/
+**/.idea/
+__pycache__/
+**/_pycache__/
+
 /results/
 /venv/
