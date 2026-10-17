@@ -85,6 +85,11 @@
           <span id="timerKeyboardToggleLabel" data-i18n="keyboardEnable">키보드 조작 켜기</span>
         </button>
       </div>
+      <button id="breakTimerTap" class="break-timer" type="button" aria-live="polite" aria-label="타이머 진행" data-i18n-aria="timerTapLabel">
+        <span id="breakTimerStatus" class="break-timer-status" data-i18n="timerReady">준비</span>
+        <span id="breakTimerDisplay" class="break-timer-display">GO</span>
+        <span id="breakTimerCount" class="break-timer-count">0 / 3</span>
+      </button>
       <details class="timer-description-details">
         <summary data-i18n="timerDescriptionTitle">타이머 설명 및 단축키</summary>
         <p data-i18n="timerDescription">화면을 눌러 다음 동작까지의 시간을 확인하세요.</p>
@@ -94,11 +99,6 @@
         </div>
         <p class="timer-shortcuts" data-i18n="timerShortcuts">키보드 조작을 켜면 Space / Enter: 진행 · Esc: 초기화 · R: 랩 시작 · S: 랩 정지 · C: 랩 기록 삭제</p>
       </details>
-      <button id="breakTimerTap" class="break-timer" type="button" aria-live="polite" aria-label="타이머 진행" data-i18n-aria="timerTapLabel">
-        <span id="breakTimerStatus" class="break-timer-status" data-i18n="timerReady">준비</span>
-        <span id="breakTimerDisplay" class="break-timer-display">GO</span>
-        <span id="breakTimerCount" class="break-timer-count">0 / 3</span>
-      </button>
       <div class="timer-tools">
         <div class="stopwatch-tools">
           <span class="stopwatch-label" data-i18n="stopwatchLabel">랩 스톱워치</span>
