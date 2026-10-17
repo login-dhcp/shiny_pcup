@@ -985,11 +985,10 @@ function updateTrendChart() {
       if (show) Plotly.Plots.resize(plot);
     });
 
-    var isLastPanel = tierIndex === config.key_ranks.length - 1;
     var axisTicks = getTokyoAxisTicks([], eventWindow[0], eventWindow[1]);
     var layout = {
       autosize: true, height: 230,
-      margin: { t: 4, r: 16, b: isLastPanel ? 58 : 12, l: 64 },
+      margin: { t: 4, r: 16, b: 58, l: 64 },
       paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
       font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 10, color: "#5b5963" },
       hovermode: "closest", showlegend: false,
@@ -997,8 +996,8 @@ function updateTrendChart() {
       xaxis: {
         type: "date", range: eventWindow, autorange: false, fixedrange: true,
         gridcolor: "#eceaf0", zeroline: false, ...axisTicks,
-        showticklabels: isLastPanel,
-        title: isLastPanel ? { text: t("chartX") } : { text: "" },
+        showticklabels: true,
+        title: { text: t("chartX") },
       },
       yaxis: {
         type: rankTrendEnabled ? "linear" : (logScaleEnabled ? "log" : "linear"),
