@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-7">
+  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-10">
 </head>
 <body>
   <header class="site-header">
@@ -58,7 +58,7 @@
         <summary data-i18n="helpTitle">이 페이지 이용 안내</summary>
         <ul>
           <li data-i18n="helpLine1">표는 왼쪽부터 현재 점수, 종료 시점 예상 점수, 현재 등수를 보여줍니다.</li>
-          <li data-i18n="helpLine2">이벤트를 고른 뒤 <b>이벤트 보기</b>를 누르고, 슬라이더로 기록 시점을 이동하세요.</li>
+          <li data-i18n="helpLine2">이벤트를 고른 뒤 이벤트 보기를 누르고, 슬라이더로 기록 시점을 이동하세요.</li>
           <li data-i18n="helpLine3">데이터 로딩에 몇 초 걸릴 수 있습니다. 오래 기다려도 표시되지 않으면 새로고침해 주세요.</li>
         </ul>
       </details>
@@ -76,6 +76,45 @@
       <div id="trendChart" role="img" aria-label="아이돌별 점수 추이와 종료 예상 차트" data-i18n-aria="chartTitle"></div>
       <p class="chart-note" data-i18n="chartNote">실선은 기록된 점수, 점선은 이벤트 종료 시점 예상 점수입니다.</p>
     </section>
+
+    <section class="timer-panel" aria-labelledby="timer-title">
+      <div class="timer-heading">
+        <div><p class="section-label" data-i18n="timerEyebrow">PRODUCER CUP TIMER</p><h2 id="timer-title" data-i18n="timerTitle">휴식 타이머</h2></div>
+        <button id="timerKeyboardToggle" class="timer-action keyboard-toggle" type="button" aria-pressed="false" data-i18n="keyboardEnable">키보드 조작 켜기</button>
+      </div>
+      <details class="timer-description-details">
+        <summary data-i18n="timerDescriptionTitle">타이머 설명 및 단축키</summary>
+        <p data-i18n="timerDescription">화면을 눌러 다음 동작까지의 시간을 확인하세요.</p>
+        <p class="timer-shortcuts" data-i18n="timerShortcuts">키보드 조작을 켜면 Space / Enter: 진행 · Esc: 초기화 · R: 랩 시작 · S: 랩 정지 · C: 랩 기록 삭제</p>
+      </details>
+      <button id="breakTimerTap" class="break-timer" type="button" aria-live="polite" aria-label="타이머 진행" data-i18n-aria="timerTapLabel">
+        <span id="breakTimerStatus" class="break-timer-status" data-i18n="timerReady">준비</span>
+        <span id="breakTimerDisplay" class="break-timer-display">GO</span>
+        <span id="breakTimerCount" class="break-timer-count">0 / 3</span>
+      </button>
+      <div class="timer-tools">
+        <div class="stopwatch-tools">
+          <span class="stopwatch-label" data-i18n="stopwatchLabel">랩 스톱워치</span>
+          <span id="stopwatchDisplay" class="stopwatch-display">0:00:00.000</span>
+          <button id="stopwatchToggle" class="timer-action" type="button" data-i18n="stopwatchStart">랩 시작</button>
+          <button id="stopwatchClear" class="timer-action secondary" type="button" data-i18n="stopwatchClear">기록 삭제</button>
+        </div>
+        <label class="rapid-setting"><span data-i18n="rapidClickSetting">연속 입력 초기화 (ms, 0=끔)</span><input id="rapidClickThreshold" type="number" min="0" step="100" value="0" inputmode="numeric"></label>
+      </div>
+      <div class="stopwatch-results">
+        <div class="lap-statistics" aria-label="랩 통계" data-i18n-aria="lapStatistics">
+          <h3 data-i18n="lapStatistics">랩 통계</h3>
+          <dl>
+            <div><dt data-i18n="medianLap">중앙값</dt><dd id="lapMedian">—</dd></div>
+            <div><dt data-i18n="meanLap">평균</dt><dd id="lapMean">—</dd></div>
+            <div><dt data-i18n="minLap">최단 랩</dt><dd id="lapMin">—</dd></div>
+            <div><dt data-i18n="maxLap">최장 랩</dt><dd id="lapMax">—</dd></div>
+          </dl>
+        </div>
+        <div class="lap-history"><h3 data-i18n="stopwatchResults">랩 기록</h3><div id="stopwatchResultsList" class="stopwatch-results-list"></div></div>
+      </div>
+    </section>
+
 
     <section class="results-section" aria-labelledby="results-heading" data-i18n-aria="resultsLabel">
       <div class="results-heading">
@@ -110,6 +149,6 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
   <script src="./assets/plotly-4.1.1.min.js" defer></script>
-  <script src="./temp.js?version=language-plotly-7" defer></script>
+  <script src="./temp.js?version=language-plotly-10" defer></script>
 </body>
 </html>

@@ -181,6 +181,13 @@ var translations = {
     previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
     loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
     linearScaleButton: "선형 축으로 보기", logScaleButton: "로그 축으로 보기",
+    timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "휴식 타이머", timerDescription: "화면을 눌러 다음 동작까지의 시간을 확인하세요.",
+    timerShortcuts: "키보드 조작을 켜면 Space / Enter: 진행 · Esc: 초기화 · R: 랩 시작 · S: 랩 정지 · C: 랩 기록 삭제", timerReady: "준비", timerTapLabel: "타이머 진행",
+    timerDescriptionTitle: "타이머 설명 및 단축키", keyboardEnable: "키보드 조작 켜기", keyboardDisable: "키보드 조작 끄기",
+    timerRunning: "다음 입력까지", timerLocked: "휴식 시간", stopwatchLabel: "랩 스톱워치", stopwatchStart: "랩 시작",
+    stopwatchStop: "랩 정지", stopwatchClear: "기록 삭제", stopwatchResults: "랩 기록", noStopwatchResults: "아직 랩 기록이 없습니다.",
+    lapStatistics: "랩 통계", medianLap: "중앙값 랩", meanLap: "평균 랩", minLap: "최단 랩", maxLap: "최장 랩",
+    rapidClickSetting: "연속 입력 초기화 (ms, 0=끔)",
   },
   en: {
     documentTitle: "Shiny Colors Producer Cup", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
@@ -206,6 +213,13 @@ var translations = {
     previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
     loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
     linearScaleButton: "Use linear scale", logScaleButton: "Use log scale",
+    timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "Break timer", timerDescription: "Tap the timer to track the wait between actions.",
+    timerShortcuts: "Enable keyboard controls: Space / Enter: count · Esc: reset · R: start lap · S: stop lap · C: clear lap history", timerReady: "Ready", timerTapLabel: "Advance timer",
+    timerDescriptionTitle: "Timer guide and shortcuts", keyboardEnable: "Enable keyboard controls", keyboardDisable: "Disable keyboard controls",
+    timerRunning: "Time until next action", timerLocked: "Break time", stopwatchLabel: "Lap stopwatch", stopwatchStart: "Start lap",
+    stopwatchStop: "Stop lap", stopwatchClear: "Clear laps", stopwatchResults: "Lap history", noStopwatchResults: "No laps recorded yet.",
+    lapStatistics: "Lap statistics", medianLap: "Median lap", meanLap: "Mean lap", minLap: "Min lap", maxLap: "Max lap",
+    rapidClickSetting: "Reset on rapid taps (ms, 0=off)",
   },
 };
 
@@ -218,6 +232,122 @@ $(document).ready(function (e) {
 
 function t(key) {
   return translations[currentLanguage][key] || translations.ko[key] || key;
+}
+
+function initializeBreakTimer() {
+  var timer = { startedAt: null, count: 0, lockedAt: null, lastTapAt: null, rapidTaps: 0, lapStartedAt: null, laps: [] };
+  var interval = 30000;
+  var lockInterval = 300000;
+  var storageKey = "shiny-pcup-break-timer";
+  try {
+    var saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    timer.laps = Array.isArray(saved.laps) ? saved.laps : [];
+    timer.lapStartedAt = saved.lapStartedAt || null;
+    document.getElementById("rapidClickThreshold").value = String(Math.max(0, Number(saved.rapidThreshold) || 0));
+  } catch (error) {}
+  var tapButton = document.getElementById("breakTimerTap");
+  var display = document.getElementById("breakTimerDisplay");
+  var status = document.getElementById("breakTimerStatus");
+  var count = document.getElementById("breakTimerCount");
+  var lapDisplay = document.getElementById("stopwatchDisplay");
+  var lapButton = document.getElementById("stopwatchToggle");
+  var results = document.getElementById("stopwatchResultsList");
+  var keyboardToggle = document.getElementById("timerKeyboardToggle");
+  var keyboardEnabled = false;
+
+  function save() {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ laps: timer.laps, lapStartedAt: timer.lapStartedAt, rapidThreshold: Number(document.getElementById("rapidClickThreshold").value) || 0 }));
+    } catch (error) {}
+  }
+  function formatClock(milliseconds, tenths) {
+    var total = Math.max(0, milliseconds);
+    var hours = Math.floor(total / 3600000);
+    var minutes = Math.floor(total / 60000) % 60;
+    var seconds = Math.floor(total / 1000) % 60;
+    var remainder = tenths ? Math.floor(total % 1000 / 100) : Math.floor(total % 1000);
+    return hours + ":" + String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0") + (tenths ? "." + remainder : "." + String(remainder).padStart(3, "0"));
+  }
+  function renderLaps(now) {
+    lapDisplay.textContent = timer.lapStartedAt ? formatClock(now - timer.lapStartedAt, false) : "0:00:00.000";
+    lapButton.textContent = t(timer.lapStartedAt ? "stopwatchStop" : "stopwatchStart");
+    results.replaceChildren();
+    var durations = timer.laps.map(function (lap) { return Math.max(0, Number(lap.end) - Number(lap.start)); }).sort(function (a, b) { return a - b; });
+    var stats = {
+      lapMedian: durations.length ? (durations.length % 2 ? durations[Math.floor(durations.length / 2)] : Math.round((durations[durations.length / 2 - 1] + durations[durations.length / 2]) / 2)) : null,
+      lapMean: durations.length ? Math.round(durations.reduce(function (sum, duration) { return sum + duration; }, 0) / durations.length) : null,
+      lapMin: durations.length ? durations[0] : null,
+      lapMax: durations.length ? durations[durations.length - 1] : null,
+    };
+    Object.keys(stats).forEach(function (id) { document.getElementById(id).textContent = stats[id] === null ? "—" : formatClock(stats[id], false); });
+    if (!timer.laps.length) {
+      var empty = document.createElement("p"); empty.className = "timer-empty"; empty.textContent = t("noStopwatchResults"); results.appendChild(empty); return;
+    }
+    timer.laps.slice().reverse().forEach(function (lap, index) {
+      var row = document.createElement("div"); row.className = "stopwatch-result-row";
+      var when = document.createElement("time"); when.dateTime = new Date(lap.start).toISOString(); when.textContent = new Date(lap.start).toLocaleString(currentLanguage === "ko" ? "ko-KR" : "en-US");
+      var duration = document.createElement("strong"); duration.textContent = formatClock(lap.end - lap.start, false);
+      row.append(when, duration); row.setAttribute("aria-label", t("stopwatchResults") + " " + (timer.laps.length - index)); results.appendChild(row);
+    });
+  }
+  function updateKeyboardToggle() {
+    keyboardToggle.setAttribute("aria-pressed", String(keyboardEnabled));
+    keyboardToggle.textContent = t(keyboardEnabled ? "keyboardDisable" : "keyboardEnable");
+  }
+  function render(now) {
+    if (timer.count && timer.count < 3 && timer.startedAt) {
+      var left = interval - (now - timer.startedAt);
+      if (left <= 0) { timer.startedAt = null; timer.count = 0; timer.lastTapAt = null; timer.rapidTaps = 0; }
+      else { status.textContent = t("timerRunning"); display.textContent = (left / 1000).toFixed(1); }
+    }
+    if (timer.count >= 3 && timer.lockedAt) {
+      var lockedLeft = lockInterval - (now - timer.lockedAt);
+      if (lockedLeft <= 0) { timer.startedAt = null; timer.count = 0; timer.lockedAt = null; }
+      else { status.textContent = t("timerLocked"); display.textContent = formatClock(lockedLeft, true).slice(3); }
+    }
+    if (!timer.count) { status.textContent = t("timerReady"); display.textContent = "GO"; }
+    count.textContent = timer.count + " / 3";
+    tapButton.classList.toggle("is-locked", timer.count >= 3);
+    renderLaps(now);
+  }
+  function advance() {
+    var now = Date.now();
+    if (timer.count >= 3) return;
+    var threshold = Math.max(0, Number(document.getElementById("rapidClickThreshold").value) || 0);
+    if (threshold && timer.lastTapAt && now - timer.lastTapAt < threshold) timer.rapidTaps++;
+    else timer.rapidTaps = 1;
+    timer.lastTapAt = now;
+    if (threshold && timer.rapidTaps > 2) {
+      timer.startedAt = null; timer.count = 0; timer.lockedAt = null; timer.rapidTaps = 0; render(now); return;
+    }
+    if (!timer.count) timer.startedAt = now;
+    timer.count++;
+    if (timer.count >= 3) timer.lockedAt = now;
+    render(now);
+  }
+  function reset() { timer.startedAt = null; timer.count = 0; timer.lockedAt = null; timer.lastTapAt = null; timer.rapidTaps = 0; render(Date.now()); }
+  tapButton.addEventListener("click", advance);
+  lapButton.addEventListener("click", function () {
+    var now = Date.now();
+    if (timer.lapStartedAt) { timer.laps.push({ start: timer.lapStartedAt, end: now }); timer.lapStartedAt = null; }
+    else timer.lapStartedAt = now;
+    save(); render(now);
+  });
+  function clearLapHistory() { timer.laps = []; timer.lapStartedAt = null; save(); render(Date.now()); }
+  document.getElementById("stopwatchClear").addEventListener("click", clearLapHistory);
+  keyboardToggle.addEventListener("click", function () { keyboardEnabled = !keyboardEnabled; updateKeyboardToggle(); });
+  document.getElementById("rapidClickThreshold").addEventListener("change", save);
+  document.addEventListener("keydown", function (event) {
+    if (!keyboardEnabled || event.ctrlKey || event.metaKey || event.altKey || event.repeat || /INPUT|SELECT|TEXTAREA|BUTTON/.test(event.target.tagName)) return;
+    if (event.code === "Space" || event.code === "Enter") { event.preventDefault(); advance(); }
+    else if (["Escape", "Backspace", "Delete"].includes(event.key)) reset();
+    else if (event.key.toLowerCase() === "r") { if (timer.lapStartedAt) { timer.laps.push({ start: timer.lapStartedAt, end: Date.now() }); } timer.lapStartedAt = Date.now(); save(); render(Date.now()); }
+    else if (event.key.toLowerCase() === "s" && timer.lapStartedAt) { timer.laps.push({ start: timer.lapStartedAt, end: Date.now() }); timer.lapStartedAt = null; save(); render(Date.now()); }
+    else if (event.key.toLowerCase() === "c") clearLapHistory();
+  });
+  updateKeyboardToggle();
+  render(Date.now());
+  window.setInterval(function () { render(Date.now()); }, 100);
 }
 
 function initLanguageSelector() {
@@ -247,6 +377,7 @@ function initLanguageSelector() {
     updateTrendChart();
   });
   updateScaleModeButton();
+  initializeBreakTimer();
 }
 
 function applyLanguage() {
@@ -259,6 +390,8 @@ function applyLanguage() {
     element.setAttribute("aria-label", t(element.dataset.i18nAria));
   });
   document.getElementById("languageSelect").value = currentLanguage;
+  var keyboardToggle = document.getElementById("timerKeyboardToggle");
+  if (keyboardToggle) keyboardToggle.textContent = t(keyboardToggle.getAttribute("aria-pressed") === "true" ? "keyboardDisable" : "keyboardEnable");
 }
 
 function formatAnniversary(eventID) {
