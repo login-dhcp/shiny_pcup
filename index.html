@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-6">
+  <link rel="stylesheet" href="./assets/common.css?version=language-plotly-7">
 </head>
 <body>
   <header class="site-header">
@@ -85,15 +85,17 @@
       <div class="tables-grid">
         <article class="table-card score-card">
           <div class="table-card-heading"><span class="card-icon score-icon" aria-hidden="true">↗</span><div><h3 data-i18n="currentScores">현재 점수</h3><p data-i18n="selectedTime">선택한 시점의 기록</p></div><span class="card-index">01</span></div>
+          <div class="table-timeline-wrap"><div class="timeline-labels"><span data-i18n="earliest">시작 기록</span><span data-i18n="latest">최신 기록</span></div><input class="table-time-range" id="scoreTimeRange" type="range" min="1" max="100" value="100" aria-label="기록 시점" data-i18n-aria="timelineLabel"></div>
           <div class="table-scroll"><table id="main_table" aria-label="아이돌별 현재 점수" data-i18n-aria="currentScores"></table></div>
         </article>
         <article class="table-card prediction-card">
           <div class="table-card-heading"><span class="card-icon forecast-icon" aria-hidden="true">⌁</span><div><h3 data-i18n="forecast">종료 예상</h3><p data-i18n="forecastSubtitle">현재 추세 기준 예상 점수</p></div><span class="card-index">02</span></div>
+          <div class="table-timeline-wrap"><div class="timeline-labels"><span data-i18n="earliest">시작 기록</span><span data-i18n="latest">최신 기록</span></div><input class="table-time-range" id="forecastTimeRange" type="range" min="1" max="100" value="100" aria-label="기록 시점" data-i18n-aria="timelineLabel"></div>
           <div class="table-scroll"><table id="predict_table" aria-label="아이돌별 종료 예상 점수" data-i18n-aria="forecast"></table></div>
         </article>
         <article class="table-card ranking-card">
           <div class="table-card-heading"><span class="card-icon rank-icon" aria-hidden="true">№</span><div><h3 data-i18n="currentRank">현재 등수</h3><p data-i18n="rankSubtitle">아이돌별 순위 구간</p></div><span class="card-index">03</span></div>
-          <div class="rank-legend" aria-label="순위 색상 범례" data-i18n-aria="rankLegend"><span><i class="legend-dot top"></i><span data-i18n="topRank">상위</span></span><span><i class="legend-dot high"></i><span data-i18n="upperRank">중상위</span></span><span><i class="legend-dot mid"></i><span data-i18n="lowerRank">중하위</span></span><span><i class="legend-dot low"></i><span data-i18n="bottomRank">하위</span></span></div>
+          <div class="table-timeline-wrap"><div class="timeline-labels"><span data-i18n="earliest">시작 기록</span><span data-i18n="latest">최신 기록</span></div><input class="table-time-range" id="rankTimeRange" type="range" min="1" max="100" value="100" aria-label="기록 시점" data-i18n-aria="timelineLabel"></div>
           <div class="table-scroll"><table id="ranking_table" aria-label="아이돌별 현재 등수" data-i18n-aria="currentRank"></table></div>
         </article>
       </div>
@@ -108,6 +110,6 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
   <script src="./assets/plotly-4.1.1.min.js" defer></script>
-  <script src="./temp.js?version=language-plotly-6" defer></script>
+  <script src="./temp.js?version=language-plotly-7" defer></script>
 </body>
 </html>

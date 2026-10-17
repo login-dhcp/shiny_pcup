@@ -177,6 +177,7 @@ var translations = {
     dataSource: "랭킹 데이터 제공", author: "제작", recordedAt: "기록 시간", noData: "선택한 이벤트의 기록 데이터가 없습니다.",
     noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
     languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위",
+    eventNotStarted: "아직 시작하지 않은 이벤트입니다.",
     previousEstimateButton: "이전 이벤트 기준 예상", currentEstimateButton: "현재 이벤트 추세 예상",
     loadingPreviousEvent: "이전 이벤트 불러오는 중", previousEventUnavailable: "이전 이벤트 기록 없음",
     linearScaleButton: "선형 축으로 보기", logScaleButton: "로그 축으로 보기",
@@ -201,6 +202,7 @@ var translations = {
     dataSource: "Ranking data", author: "Made by", recordedAt: "Recorded", noData: "No ranking data is available for the selected event.",
     noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp", chartY: "Fan count", chartLoading: "Loading chart data",
     languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank",
+    eventNotStarted: "This event has not started yet.",
     previousEstimateButton: "Estimate from previous event", currentEstimateButton: "Estimate from current trend",
     loadingPreviousEvent: "Loading previous event", previousEventUnavailable: "No previous event data",
     linearScaleButton: "Use linear scale", logScaleButton: "Use log scale",
@@ -285,6 +287,7 @@ async function init() {
   // before an upcoming event has produced any ranking logs.
   for (let i = configs.length - 1; i >= 0; i--) {
     config = configs[i];
+    if (Date.parse(config.startTime) > Date.now()) continue;
     await getAllData();
     if (hasRankingData(config)) break;
   }
@@ -315,11 +318,13 @@ function update() {
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
+    syncTimeSliders(slider.min || 1, slider.max || 1, slider.value || 1, true);
     showNoRankingData();
     return;
   }
 
   var time = Math.max(0, Math.min(Number(slider.value) - 1, sampleData.length - 1));
+  syncTimeSliders(1, sampleData.length, time + 1, false);
   var sample = sampleData[time];
   if (!sample) return;
 
@@ -417,15 +422,26 @@ function buildEventIDSelector() {
     var opt = document.createElement("option");
     opt.value = _eventID;
     opt.textContent = formatAnniversary(_eventID);
+    opt.disabled = Date.parse(_config.startTime) > Date.now();
+    if (opt.disabled) opt.title = t("eventNotStarted");
     select.appendChild(opt);
   }
-  select.selectedIndex = configs.length - 1;
+  var latestStartedIndex = configs.length - 1;
+  while (latestStartedIndex >= 0 && Date.parse(configs[latestStartedIndex].startTime) > Date.now()) latestStartedIndex--;
+  select.selectedIndex = Math.max(latestStartedIndex, 0);
+  var eventButton = document.getElementById("eventID_select_button");
+  eventButton.disabled = latestStartedIndex < 0;
+  select.addEventListener("change", function () {
+    var selectedConfig = configs[select.selectedIndex];
+    eventButton.disabled = !selectedConfig || Date.parse(selectedConfig.startTime) > Date.now();
+  });
 
   document
     .getElementById("eventID_select_button")
     .addEventListener("click", async function (e) {
       var _config_index =
         document.getElementById("eventID_select").selectedIndex;
+      if (!configs[_config_index] || Date.parse(configs[_config_index].startTime) > Date.now()) return;
       previousEventEstimateEnabled = false;
       previousEstimateConfig = null;
       updateEstimateModeButton();
@@ -453,18 +469,12 @@ async function resetTimeSlider() {
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
-    slider.min = 1;
-    slider.max = 1;
-    slider.value = 1;
-    slider.disabled = true;
+    syncTimeSliders(1, 1, 1, true);
     showNoRankingData();
     return;
   }
 
-  slider.disabled = false;
-  slider.min = 1;
-  slider.max = sampleData.length;
-  slider.value = sampleData.length;
+  syncTimeSliders(1, sampleData.length, sampleData.length, false);
   setTimeText(sampleData[sampleData.length - 1].summaryTime);
 }
 
@@ -472,7 +482,26 @@ async function buildTimeSlider() {
   var slider = document.getElementById("timeRange");
   slider.addEventListener("input", update);
   slider.addEventListener("change", update);
+  document.querySelectorAll(".table-time-range").forEach(function (tableSlider) {
+    tableSlider.addEventListener("input", function () {
+      slider.value = tableSlider.value;
+      update();
+    });
+    tableSlider.addEventListener("change", function () {
+      slider.value = tableSlider.value;
+      update();
+    });
+  });
   await resetTimeSlider();
+}
+
+function syncTimeSliders(minimum, maximum, value, disabled) {
+  document.querySelectorAll("#timeRange, .table-time-range").forEach(function (slider) {
+    slider.min = minimum;
+    slider.max = maximum;
+    slider.value = value;
+    slider.disabled = disabled;
+  });
 }
 
 function initializeTrendControls() {

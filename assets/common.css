@@ -51,10 +51,10 @@ h1, h2, h3, p { margin-top: 0; }
 .timeline-wrap { margin-top: 20px; }
 .timeline-labels { display: flex; justify-content: space-between; margin-bottom: 2px; color: #92909a; font-size: 10px; }
 #timeRange { width: 100%; height: 18px; margin: 0; appearance: none; background: transparent; cursor: pointer; }
-#timeRange::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, #e8e3eb, #d4c2dc); }
-#timeRange::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, #e8e3eb, #d4c2dc); }
-#timeRange::-webkit-slider-thumb { width: 15px; height: 15px; margin-top: -5.5px; appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--plum); box-shadow: 0 1px 5px #72547f66; }
-#timeRange::-moz-range-thumb { width: 10px; height: 10px; border: 3px solid #fff; border-radius: 50%; background: var(--plum); box-shadow: 0 1px 5px #72547f66; }
+#timeRange::-webkit-slider-runnable-track, .table-time-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, #e8e3eb, #d4c2dc); }
+#timeRange::-moz-range-track, .table-time-range::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, #e8e3eb, #d4c2dc); }
+#timeRange::-webkit-slider-thumb, .table-time-range::-webkit-slider-thumb { width: 15px; height: 15px; margin-top: -5.5px; appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--plum); box-shadow: 0 1px 5px #72547f66; }
+#timeRange::-moz-range-thumb, .table-time-range::-moz-range-thumb { width: 10px; height: 10px; border: 3px solid #fff; border-radius: 50%; background: var(--plum); box-shadow: 0 1px 5px #72547f66; }
 .help-details { margin-top: 11px; border-top: 1px solid #f0eef2; color: var(--muted); font-size: 11px; }
 .help-details summary { width: fit-content; padding-top: 12px; color: #6b6571; cursor: pointer; font-weight: 600; }
 .help-details ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.9; }
@@ -82,10 +82,8 @@ h1, h2, h3, p { margin-top: 0; }
 .table-card-heading h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; }
 .table-card-heading p { margin: 0; color: #93909b; font-size: 10px; }
 .card-index { margin-left: auto; align-self: flex-start; color: #b5b2bb; font-size: 10px; font-weight: 600; letter-spacing: .1em; }
-.rank-legend { min-height: 34px; padding: 8px 12px 5px; display: flex; flex-wrap: wrap; gap: 9px; color: #77747f; font-size: 9px; }
-.rank-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.legend-dot { width: 7px; height: 7px; border-radius: 50%; }
-.legend-dot.top { background: #5b9dce; }.legend-dot.high { background: #7aaf62; }.legend-dot.mid { background: #d5b94d; }.legend-dot.low { background: #d47e72; }
+.table-timeline-wrap { padding: 8px 14px 5px; border-bottom: 1px solid #eeecf0; }
+.table-time-range { display: block; width: 100%; height: 18px; margin: 0; appearance: none; background: transparent; cursor: pointer; }
 .table-scroll { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-color: #d8d2dc transparent; scrollbar-width: thin; }
 table { width: 100%; border: 0; border-collapse: separate; border-spacing: 0; font-size: 11px; font-variant-numeric: tabular-nums; }
 th, td { height: 31px; padding: 0 9px; border: 0; border-bottom: 1px solid #f0eef2; white-space: nowrap; }
