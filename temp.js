@@ -704,25 +704,11 @@ function estimateEndScore(score, timestamp, idolIndex, rank) {
     return Number(score);
   }
   if (previousEventEstimateEnabled && previousEstimateConfig && idolIndex !== undefined && rank !== undefined) {
-    var previousEventData = data_all_all[previousEstimateConfig.eventID];
-    var previousSample = previousEventData && previousEventData[0] && previousEventData[0][previousEstimateConfig.key_ranks[0]];
-    var previousRankData = previousEventData && previousEventData[idolIndex] && previousEventData[idolIndex][rank];
-    if (Array.isArray(previousSample) && previousSample.length && Array.isArray(previousRankData) && previousRankData.length) {
-      var progress = Math.max(0, Math.min(1, elapsedHours / totalHours));
-      var previousTotalHours = timeDiff(previousEstimateConfig.startTime, previousEstimateConfig.endTime);
-      var targetTime = Date.parse(previousEstimateConfig.startTime) + previousTotalHours * progress * 3600000;
-      var matchingLogs = previousRankData.filter(function (log) { return Number(log.score) > 0 && Number.isFinite(Date.parse(log.summaryTime)); });
-      if (matchingLogs.length) {
-        var previousStartScore = Number(matchingLogs[0].score);
-        var previousAtProgress = matchingLogs.reduce(function (closest, log) {
-          return Math.abs(Date.parse(log.summaryTime) - targetTime) < Math.abs(Date.parse(closest.summaryTime) - targetTime) ? log : closest;
-        }, matchingLogs[0]);
-        var previousFinalScore = Number(matchingLogs[matchingLogs.length - 1].score);
-        var previousProgressScore = Number(previousAtProgress.score);
-        if (previousProgressScore > 0 && previousFinalScore >= previousProgressScore && previousFinalScore >= previousStartScore) {
-          return Number(score) * previousFinalScore / previousProgressScore;
-        }
-      }
+    var progress = Math.max(0, Math.min(1, elapsedHours / totalHours));
+    var previousProgressScore = getPreviousScoreAtProgress(progress, idolIndex, rank);
+    var previousFinalScore = getPreviousScoreAtProgress(1, idolIndex, rank);
+    if (previousProgressScore > 0 && previousFinalScore >= previousProgressScore) {
+      return Number(score) * previousFinalScore / previousProgressScore;
     }
   }
   return Number(score) * totalHours / elapsedHours;
@@ -734,8 +720,13 @@ function getPreviousScoreAtProgress(progress, idolIndex, rank) {
   var previousRankData = previousData && previousData[idolIndex] && previousData[idolIndex][rank];
   var previousTotalHours = timeDiff(previousEstimateConfig.startTime, previousEstimateConfig.endTime);
   if (!Array.isArray(previousRankData) || !previousRankData.length || !Number.isFinite(previousTotalHours) || previousTotalHours <= 0) return null;
-  var targetTime = Date.parse(previousEstimateConfig.startTime) + previousTotalHours * Math.max(0, Math.min(1, progress)) * 3600000;
-  var validLogs = previousRankData.filter(function (log) { return Number(log.score) > 0 && Number.isFinite(Date.parse(log.summaryTime)); });
+  var previousStart = Date.parse(previousEstimateConfig.startTime);
+  var previousEnd = Date.parse(previousEstimateConfig.endTime);
+  var targetTime = previousStart + previousTotalHours * Math.max(0, Math.min(1, progress)) * 3600000;
+  var validLogs = previousRankData.filter(function (log) {
+    var logTime = Date.parse(log.summaryTime);
+    return Number(log.score) > 0 && Number.isFinite(logTime) && logTime >= previousStart && logTime <= previousEnd;
+  });
   if (!validLogs.length) return null;
   var nearest = validLogs.reduce(function (closest, log) {
     return Math.abs(Date.parse(log.summaryTime) - targetTime) < Math.abs(Date.parse(closest.summaryTime) - targetTime) ? log : closest;
@@ -803,7 +794,7 @@ async function togglePreviousEventEstimate() {
   }
   button.disabled = true;
   document.getElementById("estimateModeToggleLabel").textContent = t("loadingPreviousEvent");
-  previousEstimateConfig = await loadPreviousEventEstimateConfig(currentIndex);
+  previousEstimateConfig = await loadPreviousEventEstimateConfig();
   button.disabled = false;
   if (previousEstimateConfig) {
     previousEventEstimateEnabled = true;
@@ -1128,6 +1119,19 @@ async function buildPredictionTable(time) {
       // 데이터에 내용이 없을 경우
       if (data_final_log === undefined) {
         data_final_log = {"score": 1, "summaryTime": endTime};
+      }
+      // Some archived rankings include snapshots after the scheduled event end.
+      // Estimate from the latest in-event score when such a snapshot is selected.
+      if (previousEventEstimateEnabled && Date.parse(data_final_log.summaryTime) > Date.parse(endTime)) {
+        var eventEndTimestamp = Date.parse(endTime);
+        for (var estimateLogIndex = data_rank.length - 1; estimateLogIndex >= 0; estimateLogIndex--) {
+          var estimateLog = data_rank[estimateLogIndex];
+          var estimateLogTimestamp = estimateLog && Date.parse(estimateLog.summaryTime);
+          if (Number.isFinite(estimateLogTimestamp) && estimateLogTimestamp <= eventEndTimestamp) {
+            data_final_log = estimateLog;
+            break;
+          }
+        }
       }
       var score = data_final_log["score"];
       var timeString = data_final_log["summaryTime"];
