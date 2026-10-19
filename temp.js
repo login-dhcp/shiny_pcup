@@ -151,6 +151,7 @@ var previousEventEstimateEnabled = true;
 var previousEstimateConfig = null;
 var logScaleEnabled = false;
 var rankTrendEnabled = false;
+var scoreDeltaEnabled = false;
 var trendPanelVisibility = {};
 var englishIdolNames = [
   "Mano", "Hiori", "Meguru", "Kogane", "Mamimi", "Sakuya", "Yuika", "Kiriko",
@@ -171,13 +172,13 @@ var translations = {
     chartSectionLabel: "점수 추이 차트", chartEyebrow: "SCORE TRENDS", chartTitle: "아이돌 점수 추이와 종료 예상",
     chartRank: "순위 구간", chartNote: "각 순위 구간은 별도 축을 사용합니다. 점선은 2시간 간격 종료 예상입니다.",
     resultsLabel: "아이돌 랭킹 결과", rankingOverview: "RANKING OVERVIEW", resultsTitle: "아이돌별 랭킹",
-    scrollNote: "표를 좌우로 움직여 모든 순위를 확인할 수 있어요.", currentScores: "현재 점수",
+    scrollNote: "표를 좌우로 움직여 모든 순위를 확인할 수 있어요.", scoreDeltaToggleLabel: "팬 증가량 표시", currentScores: "현재 점수",
     selectedTime: "선택한 시점의 기록", forecast: "종료 예상", forecastSubtitle: "현재 추세 기준 예상 점수",
     currentRank: "현재 등수", rankSubtitle: "아이돌별 순위 구간", rankLegend: "순위 색상 범례",
     topRank: "상위", upperRank: "중상위", lowerRank: "중하위", bottomRank: "하위",
     lastUpdated: "최신 업데이트", disclaimer: "본 사이트는 BANDAI NAMCO 및 BXD와 무관한 팬 제작 페이지입니다. 이미지와 관련 지적 재산권은 해당 권리자에게 있습니다.",
     dataSource: "랭킹 데이터 제공", author: "제작", recordedAt: "기록 시간", noData: "선택한 이벤트의 기록 데이터가 없습니다.",
-    noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각 (UTC+9)", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
+    noRows: "아직 표시할 기록이 없습니다.", idol: "아이돌", chartX: "기록 시각", chartY: "팬 수", chartLoading: "차트 데이터를 불러오는 중",
     finishedToast: "완료되었습니다.",
     languageLabel: "언어", chartIdol: "아이돌", rankLabel: "순위", trendVisible: "표시", trendHidden: "숨김", showTrend: "추이 표시", hideTrend: "추이 숨기기",
     eventNotStarted: "아직 시작하지 않은 이벤트입니다.",
@@ -212,13 +213,13 @@ var translations = {
     chartSectionLabel: "Score trend chart", chartEyebrow: "SCORE TRENDS", chartTitle: "Idol score trends and end estimates",
     chartRank: "Rank tier", chartNote: "Each rank tier has its own scale. Dotted lines show estimates at two-hour intervals.",
     resultsLabel: "Idol ranking results", rankingOverview: "RANKING OVERVIEW", resultsTitle: "Rankings by idol",
-    scrollNote: "Scroll horizontally inside a table to see every rank.", currentScores: "Current scores",
+    scrollNote: "Scroll horizontally inside a table to see every rank.", scoreDeltaToggleLabel: "Show fan increase", currentScores: "Current scores",
     selectedTime: "Scores at selected time", forecast: "End estimate", forecastSubtitle: "Projected from the current trend",
     currentRank: "Current rank", rankSubtitle: "Rank tier by idol", rankLegend: "Rank color legend",
     topRank: "Top", upperRank: "Upper", lowerRank: "Lower", bottomRank: "Bottom",
     lastUpdated: "Last updated", disclaimer: "This fan-made site is not affiliated with BANDAI NAMCO or BXD. Images and related intellectual property belong to their respective owners.",
     dataSource: "Ranking data", author: "Made by", recordedAt: "Recorded", noData: "No ranking data is available for the selected event.",
-    noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp (UTC+9)", chartY: "Fan count", chartLoading: "Loading chart data",
+    noRows: "There are no records to show yet.", idol: "Idol", chartX: "Timestamp", chartY: "Fan count", chartLoading: "Loading chart data",
     finishedToast: "Finished!",
     languageLabel: "Language", chartIdol: "Idol", rankLabel: "Rank", trendVisible: "Shown", trendHidden: "Hidden", showTrend: "Show trend", hideTrend: "Hide trend",
     eventNotStarted: "This event has not started yet.",
@@ -400,6 +401,11 @@ function initLanguageSelector() {
     document.getElementById("estimateModeToggle").disabled = rankTrendEnabled;
     updateTrendChart();
   });
+  document.getElementById("scoreDeltaToggle").addEventListener("click", function () {
+    scoreDeltaEnabled = !scoreDeltaEnabled;
+    this.setAttribute("aria-pressed", String(scoreDeltaEnabled));
+    update(false);
+  });
   updateScaleModeButton();
   initializeBreakTimer();
 }
@@ -468,7 +474,7 @@ async function init() {
   previousEstimateConfig = await loadPreviousEventEstimateConfig();
   if (!previousEstimateConfig) previousEventEstimateEnabled = false;
   updateEstimateModeButton();
-  update();
+  update(true);
   showFinishedToast();
 }
 
@@ -486,14 +492,14 @@ function updateHTML(time) {
   buildRankingTable(time);
 }
 
-function update() {
+function update(renderTrends = true) {
   var slider = document.getElementById("scoreTimeRange");
   var eventData = data_all_all[config.eventID];
   var sampleData = eventData && eventData[0] && eventData[0][config.key_ranks[0]];
   if (!Array.isArray(sampleData) || sampleData.length === 0) {
     syncTimeSliders(slider.min || 1, slider.max || 1, slider.value || 1, true);
     updateEventPeriod();
-    showNoRankingData();
+    showNoRankingData(renderTrends);
     return;
   }
 
@@ -504,16 +510,16 @@ function update() {
 
   updateEventPeriod();
   updateHTML(time);
-  updateTrendChart();
+  if (renderTrends) updateTrendChart();
 }
 
-function showNoRankingData() {
+function showNoRankingData(renderTrends = true) {
   updateEventPeriod();
   ["main_table", "predict_table", "ranking_table"].forEach(function (id) {
     document.getElementById(id).innerHTML =
       `<tbody><tr><td class=\"empty-state\" colspan=\"6\">${t("noRows")}</td></tr></tbody>`;
   });
-  updateTrendChart();
+  if (renderTrends) updateTrendChart();
 }
 
 async function getDataAPICached(eventID) {
@@ -648,11 +654,11 @@ async function buildTimeSlider() {
   document.querySelectorAll(".table-time-range").forEach(function (tableSlider) {
     tableSlider.addEventListener("input", function () {
       slider.value = tableSlider.value;
-      update();
+      update(false);
     });
     tableSlider.addEventListener("change", function () {
       slider.value = tableSlider.value;
-      update();
+      update(false);
     });
   });
   await resetTimeSlider();
@@ -940,7 +946,7 @@ function updateTrendChart() {
     panel.className = "trend-panel";
     var heading = document.createElement("div");
     heading.className = "trend-panel-heading";
-    var isVisible = trendPanelVisibility[tier] !== false;
+    var isVisible = trendPanelVisibility[tier] === true;
     var collapseToggle = document.createElement("button");
     collapseToggle.className = "trend-collapse-toggle";
     collapseToggle.type = "button";
@@ -1043,6 +1049,7 @@ async function buildBasicTable(time) {
       var rank = key_ranks[j];
       var data_rank = data_idol[rank];
       var data_final_log;
+      var data_final_index;
 
       var sample_data = data_all_all[eventID][0][key_ranks[0]];
       var reference_length = sample_data.length;
@@ -1054,18 +1061,34 @@ async function buildBasicTable(time) {
         var realTime = time - (reference_length - data_rank.length);
         if (realTime < 0) {
           data_final_log = data_rank[0];
+          data_final_index = 0;
         } else {
           data_final_log = data_rank[realTime];
+          data_final_index = realTime;
         }
       } else {
         data_final_log = data_rank[time];
+        data_final_index = time;
       }
 
       // 데이터에 내용이 없을 경우
       if (data_final_log === undefined) {
         data_final_log = {"score": 1, "summaryTime": time};
       }
-      code += `<td class="numeric-cell">${numberWithCommas(data_final_log["score"])}</td>\n`;
+      var currentScore = Number(data_final_log.score);
+      var scoreDisplay = numberWithCommas(currentScore);
+      if (scoreDeltaEnabled) {
+        var previousLog = data_final_index > 0 ? data_rank[data_final_index - 1] : null;
+        var previousScore = previousLog && Number(previousLog.score);
+        var scoreDelta = currentScore - previousScore;
+        var hasScoreDelta = Number.isFinite(previousScore);
+        var deltaText = hasScoreDelta
+          ? `${scoreDelta > 0 ? "+" : ""}${numberWithCommas(scoreDelta)}`
+          : "—";
+        var deltaClass = hasScoreDelta ? (scoreDelta < 0 ? "score-delta-negative" : "score-delta-positive") : "score-delta-neutral";
+        scoreDisplay = `<span class="score-cell-content"><span>${scoreDisplay}</span><span class="score-delta ${deltaClass}">${deltaText}</span></span>`;
+      }
+      code += `<td class="numeric-cell" data-score="${currentScore}">${scoreDisplay}</td>\n`;
     }
     code += "</tr>\n";
   }
@@ -1166,9 +1189,7 @@ async function buildRankingTable(time) {
     for (let j = 0; j < key_ranks.length; j++) {
       var column_values = [];
       for (let k = 0; k < idols.length; k++) {
-        var score = table_target.rows[k + 1].cells[j + 1].innerHTML;
-        score = numberRemoveCommas(score);
-        score = Number(score);
+        var score = Number(table_target.rows[k + 1].cells[j + 1].dataset.score);
         column_values.push(score);
       }
       var sorted_values = column_values.slice();
@@ -1214,7 +1235,7 @@ function formatTokyoTimestamp(value, short = false) {
     timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", ...(short ? {} : { second: "2-digit" }), hourCycle: "h23",
   }).format(parsedDate);
-  return short ? formatted : `${formatted} UTC+9`;
+  return formatted;
 }
 
 function toPlotlyDate(value) {
@@ -1233,7 +1254,7 @@ function getTokyoAxisTicks(times, rangeStart, rangeEnd) {
   for (var i = 0; i < count; i++) {
     var timestamp = count === 1 ? minTime : minTime + (maxTime - minTime) * i / (count - 1);
     tickvals.push(new Date(timestamp).toISOString());
-    ticktext.push(`${formatTokyoTimestamp(timestamp, true)} UTC+9`);
+    ticktext.push(formatTokyoTimestamp(timestamp, true));
   }
   return { tickmode: "array", tickvals: tickvals, ticktext: ticktext };
 }

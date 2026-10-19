@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./assets/common.css?version=estimate-badge-29">
+  <link rel="stylesheet" href="./assets/common.css?version=ranking-overview-dividers-37">
 </head>
 <body>
   <header class="site-header">
@@ -128,7 +128,10 @@
     <section class="results-section" aria-labelledby="results-heading" data-i18n-aria="resultsLabel">
       <div class="results-heading">
         <div><p class="section-label" data-i18n="rankingOverview">RANKING OVERVIEW</p><h2 id="results-heading" data-i18n="resultsTitle">아이돌별 랭킹</h2></div>
-        <p class="results-note" data-i18n="scrollNote">표를 좌우로 움직여 모든 순위를 확인할 수 있어요.</p>
+        <div class="results-heading-tools">
+          <button id="scoreDeltaToggle" class="chart-toggle" type="button" aria-pressed="false"><span class="chart-toggle-track" aria-hidden="true"></span><span data-i18n="scoreDeltaToggleLabel">증가량 표시</span></button>
+          <p class="results-note" data-i18n="scrollNote">표를 좌우로 움직여 모든 순위를 확인할 수 있어요.</p>
+        </div>
       </div>
       <div class="tables-grid">
         <article class="table-card score-card">
@@ -158,6 +161,6 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" defer></script>
   <script src="./assets/plotly-4.1.1.min.js" defer></script>
-  <script src="./temp.js?version=subplot-xlabels-32" defer></script>
+  <script src="./temp.js?version=delta-second-row-34" defer></script>
 </body>
 </html>
