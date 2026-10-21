@@ -159,9 +159,15 @@ var englishIdolNames = [
   "Asahi", "Fuyuko", "Mei", "Toru", "Madoka", "Koito", "Hinana", "Nichika",
   "Mikoto", "Luka", "Hana", "Haruki",
 ];
+var japaneseIdolNames = [
+  "櫻木真乃", "風野灯織", "八宮めぐる", "月岡恋鐘", "田中摩美々", "白瀬咲耶", "三峰結華", "幽谷霧子",
+  "小宮果穂", "園田智代子", "西城樹里", "杜野凛世", "有栖川夏葉", "大崎甘奈", "大崎甜花", "桑山千雪",
+  "芹沢あさひ", "黛冬優子", "和泉愛依", "浅倉透", "樋口円香", "福丸小糸", "市川雛菜", "七草にちか",
+  "緋田美琴", "斑鳩ルカ", "鈴木羽那", "郁田はるき",
+];
 var translations = {
   ko: {
-    documentTitle: "샤이니컬러즈 프로듀서컵", wiki: "위키", source: "소스", pageTitle: "프로듀서컵 기록실", navigation: "주요 링크",
+    documentTitle: "샤이니컬러즈 프로듀서컵", brandName: "프로듀서컵", metaDescription: "샤이니컬러즈 프로듀서컵 팬 랭킹 점수 기록과 종료 예상치를 확인하세요.", wiki: "위키", source: "소스", pageTitle: "프로듀서컵 기록실", navigation: "주요 링크",
     introText: "아이돌별 팬 랭킹 점수의 흐름과 종료 예상치를 한눈에 확인하세요.", dataBadge: "기록 데이터",
     controlsLabel: "기록 조회 설정", eventArchive: "이벤트 기록", controlsTitle: "이벤트 선택",
     eventStart: "시작", eventEnd: "종료", eventSelect: "이벤트 선택", viewEvent: "이벤트 보기",
@@ -196,13 +202,13 @@ var translations = {
     lapTimerGuideTitle: "랩 스톱워치", lapTimerGuide1: "랩 시작 버튼으로 측정을 시작하고 랩 정지 버튼으로 시간을 기록합니다.",
     lapTimerGuide2: "키보드 조작을 켜면 R로 랩을 시작하거나 새 랩을 열고, S로 측정을 정지하며, C로 랩 기록을 삭제합니다.",
     lapTimerGuide3: "랩 기록과 연속 입력 설정은 이 브라우저에 저장됩니다.",
-    timerRunning: "다음 입력까지", timerLocked: "휴식 시간", stopwatchLabel: "랩 스톱워치", stopwatchStart: "랩 시작",
+    timerRunning: "다음 입력까지", timerLocked: "휴식 시간", timerGo: "GO", stopwatchLabel: "랩 스톱워치", stopwatchStart: "랩 시작",
     stopwatchStop: "랩 정지", stopwatchClear: "기록 삭제", stopwatchResults: "랩 기록", noStopwatchResults: "아직 랩 기록이 없습니다.",
     lapStatistics: "랩 통계", medianLap: "중앙값 랩", meanLap: "평균 랩", minLap: "최단 랩", maxLap: "최장 랩",
     rapidClickSetting: "연속 입력 초기화 (ms, 0=끔)",
   },
   en: {
-    documentTitle: "Shiny Colors Producer Cup", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
+    documentTitle: "Shiny Colors Producer Cup", brandName: "Producer Cup", metaDescription: "View Shiny Colors Producer Cup fan-ranking scores and projected event-end totals.", wiki: "Wiki", source: "Source", pageTitle: "Producer Cup Archive", navigation: "Main navigation",
     introText: "Explore fan-ranking score trends and projected event-end scores for every idol.", dataBadge: "Ranking data",
     controlsLabel: "Archive controls", eventArchive: "EVENT ARCHIVE", controlsTitle: "Choose an event",
     eventStart: "Start", eventEnd: "End", eventSelect: "Select event", viewEvent: "View event",
@@ -237,10 +243,53 @@ var translations = {
     lapTimerGuideTitle: "Lap stopwatch", lapTimerGuide1: "Use Start lap to begin timing and Stop lap to record the elapsed time.",
     lapTimerGuide2: "With keyboard controls enabled, R starts a lap or opens a new lap, S stops timing, and C clears lap history.",
     lapTimerGuide3: "Lap history and the rapid input setting are saved in this browser.",
-    timerRunning: "Time until next action", timerLocked: "Break time", stopwatchLabel: "Lap stopwatch", stopwatchStart: "Start lap",
+    timerRunning: "Time until next action", timerLocked: "Break time", timerGo: "GO", stopwatchLabel: "Lap stopwatch", stopwatchStart: "Start lap",
     stopwatchStop: "Stop lap", stopwatchClear: "Clear laps", stopwatchResults: "Lap history", noStopwatchResults: "No laps recorded yet.",
     lapStatistics: "Lap statistics", medianLap: "Median lap", meanLap: "Mean lap", minLap: "Min lap", maxLap: "Max lap",
     rapidClickSetting: "Reset on rapid taps (ms, 0=off)",
+  },
+  ja: {
+    documentTitle: "シャイニーカラーズ プロデューサーカップ", brandName: "プロデューサーカップ", metaDescription: "シャイニーカラーズ プロデューサーカップのファンランキング記録と終了予想を確認できます。",
+    wiki: "Wiki", source: "ソース", pageTitle: "プロデューサーカップ記録室", navigation: "メインナビゲーション",
+    introText: "アイドル別のファンランキング推移とイベント終了時の予想を確認できます。", dataBadge: "ランキング記録",
+    controlsLabel: "イベント記録の設定", eventArchive: "イベント記録", controlsTitle: "イベント選択",
+    eventStart: "開始", eventEnd: "終了", eventSelect: "イベントを選択", viewEvent: "表示",
+    earliest: "最初の記録", latest: "最新の記録", timelineLabel: "記録時刻", helpTitle: "使い方",
+    helpLine1: "表には左から現在のスコア、終了時の予想スコア、現在の順位が表示されます。",
+    helpLine2: "イベントを選び、「表示」を押してから、表のスライダーで記録時刻を切り替えてください。",
+    helpLine3: "データの読み込みには数秒かかる場合があります。表示されない場合はページを再読み込みしてください。",
+    chartSectionLabel: "スコア推移グラフ", chartEyebrow: "SCORE TRENDS", chartTitle: "アイドル別スコア推移と終了予想",
+    chartRank: "順位帯", chartNote: "順位帯ごとに別の軸を使用します。点線は2時間ごとの終了予想です。",
+    resultsLabel: "アイドル別ランキング結果", rankingOverview: "RANKING OVERVIEW", resultsTitle: "アイドル別ランキング",
+    scrollNote: "表を左右にスクロールするとすべての順位を確認できます。", scoreDeltaToggleLabel: "ファン増加数を表示", currentScores: "現在のスコア",
+    selectedTime: "選択した時刻の記録", forecast: "終了予想", forecastSubtitle: "現在の推移から予測",
+    currentRank: "現在の順位", rankSubtitle: "アイドル別の順位帯", rankLegend: "順位の色分け",
+    topRank: "上位", upperRank: "中上位", lowerRank: "中下位", bottomRank: "下位",
+    lastUpdated: "最終更新", disclaimer: "本サイトはBANDAI NAMCOおよびBXDとは関係のないファン制作サイトです。画像および関連する知的財産権は各権利者に帰属します。",
+    dataSource: "ランキングデータ提供", author: "制作", recordedAt: "記録時刻", noData: "選択したイベントのランキング記録はありません。",
+    noRows: "表示できる記録がありません。", idol: "アイドル", chartX: "記録時刻", chartY: "ファン数", chartLoading: "グラフを読み込み中",
+    finishedToast: "完了しました。", languageLabel: "言語", chartIdol: "アイドル", rankLabel: "順位",
+    trendVisible: "表示中", trendHidden: "非表示", showTrend: "推移を表示", hideTrend: "推移を隠す",
+    eventNotStarted: "このイベントはまだ始まっていません。",
+    previousEstimateButton: "前回イベントを基準に予想", currentEstimateButton: "現在のイベント推移から予想",
+    loadingPreviousEvent: "前回イベントを読み込み中", previousEventUnavailable: "前回イベントの記録がありません",
+    linearScaleButton: "線形軸で表示", logScaleButton: "対数軸で表示",
+    logScaleToggleLabel: "対数軸", previousEstimateToggleLabel: "前回イベントを基準に予想", rankTrendToggleLabel: "順位推移のみ表示",
+    idolRank: "アイドル順位", rankTrendNote: "選択したアイドルの順位推移です。数字が小さいほど上位です。",
+    timerEyebrow: "PRODUCER CUP TIMER", timerTitle: "休憩タイマー", timerDescription: "画面をタップして次の操作までの時間を計ります。",
+    timerShortcuts: "キーボード操作を有効にすると、Space / Enter：進行 · Esc：リセット · R：ラップ開始 · S：ラップ停止 · C：ラップ記録を削除",
+    timerReady: "準備完了", timerTapLabel: "タイマーを進める", timerDescriptionTitle: "タイマーの説明とショートカット",
+    keyboardEnable: "キーボード操作を有効にする", keyboardDisable: "キーボード操作を無効にする",
+    breakTimerGuideTitle: "休憩タイマー", breakTimerGuide1: "最初の入力で30秒のカウントダウンが始まります。3回入力すると5分間の休憩タイマーが始まり、休憩中は入力できません。",
+    breakTimerGuide2: "30秒以内に3回入力しないとカウントがリセットされます。連続入力間隔を設定すると、その時間内に3回入力したときにタイマーがリセットされます。",
+    breakTimerGuide3: "キーボード操作を有効にすると、SpaceまたはEnterで入力し、Escでタイマーをリセットできます。",
+    lapTimerGuideTitle: "ラップストップウォッチ", lapTimerGuide1: "「ラップ開始」で計測を始め、「ラップ停止」で経過時間を記録します。",
+    lapTimerGuide2: "キーボード操作が有効な場合、Rでラップ開始または次のラップを開始し、Sで停止、Cで記録を消去します。",
+    lapTimerGuide3: "ラップ記録と連続入力の設定はこのブラウザーに保存されます。",
+    timerRunning: "次の入力まで", timerLocked: "休憩中", timerGo: "開始", stopwatchLabel: "ラップストップウォッチ", stopwatchStart: "ラップ開始",
+    stopwatchStop: "ラップ停止", stopwatchClear: "記録を消去", stopwatchResults: "ラップ記録", noStopwatchResults: "ラップ記録はありません。",
+    lapStatistics: "ラップ統計", medianLap: "中央値", meanLap: "平均", minLap: "最短ラップ", maxLap: "最長ラップ",
+    rapidClickSetting: "連続入力でリセット（ms、0=無効）",
   },
 };
 
@@ -327,7 +376,7 @@ function initializeBreakTimer() {
       if (lockedLeft <= 0) { timer.startedAt = null; timer.count = 0; timer.lockedAt = null; }
       else { status.textContent = t("timerLocked"); display.textContent = formatClock(lockedLeft, true).slice(3); }
     }
-    if (!timer.count) { status.textContent = t("timerReady"); display.textContent = "GO"; }
+    if (!timer.count) { status.textContent = t("timerReady"); display.textContent = t("timerGo"); }
     count.textContent = timer.count + " / 3";
     tapButton.classList.toggle("is-locked", timer.count >= 3);
     renderLaps(now);
@@ -413,8 +462,13 @@ function initLanguageSelector() {
 function applyLanguage() {
   document.documentElement.lang = currentLanguage;
   document.title = t("documentTitle");
+  var description = document.querySelector('meta[name="description"]');
+  if (description) description.content = t("metaDescription");
   document.querySelectorAll("[data-i18n]").forEach(function (element) {
     element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-content]").forEach(function (element) {
+    element.setAttribute("content", t(element.dataset.i18nContent));
   });
   document.querySelectorAll("[data-i18n-aria]").forEach(function (element) {
     element.setAttribute("aria-label", t(element.dataset.i18nAria));
@@ -423,15 +477,26 @@ function applyLanguage() {
   var keyboardToggle = document.getElementById("timerKeyboardToggle");
   var keyboardToggleLabel = document.getElementById("timerKeyboardToggleLabel");
   if (keyboardToggle && keyboardToggleLabel) keyboardToggleLabel.textContent = t(keyboardToggle.getAttribute("aria-pressed") === "true" ? "keyboardDisable" : "keyboardEnable");
+  var updatedDate = document.getElementById("lastUpdatedDate");
+  if (updatedDate) {
+    var dateLocale = currentLanguage === "ko" ? "ko-KR" : currentLanguage === "ja" ? "ja-JP" : "en-US";
+    updatedDate.textContent = new Intl.DateTimeFormat(dateLocale, {
+      timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date("2026-10-16T00:00:00+09:00"));
+  }
 }
 
 function formatAnniversary(eventID) {
   var anniversary = (eventID - 40000) / 2;
-  return currentLanguage === "ko" ? `${anniversary}주년` : `${anniversary}th Anniversary`;
+  if (currentLanguage === "ko") return `${anniversary}주년`;
+  if (currentLanguage === "ja") return `${anniversary}周年`;
+  return `${anniversary}th Anniversary`;
 }
 
 function getIdolName(index) {
-  return currentLanguage === "ko" ? idolNames[index] : englishIdolNames[index] || idolNames[index];
+  if (currentLanguage === "ko") return idolNames[index];
+  if (currentLanguage === "ja") return japaneseIdolNames[index] || idolNames[index];
+  return englishIdolNames[index] || idolNames[index];
 }
 
 function updateEventOptionLabels() {
@@ -764,7 +829,7 @@ function formatKoreanScoreTick(value) {
 }
 
 function getKoreanScoreAxisTicks(values, isLogScale) {
-  if (currentLanguage !== "ko") return {};
+  if (currentLanguage !== "ko" && currentLanguage !== "ja") return {};
   var finiteValues = values.filter(function (value) { return Number.isFinite(value) && value > 0; });
   if (!finiteValues.length) return {};
   var minValue = Math.min.apply(null, finiteValues);
@@ -787,7 +852,16 @@ function getKoreanScoreAxisTicks(values, isLogScale) {
     if (tickvals.length < 2 && minValue !== maxValue) tickvals.push(maxValue);
   }
   if (!tickvals.length) tickvals.push(minValue);
-  return { tickmode: "array", tickvals: tickvals, ticktext: tickvals.map(formatKoreanScoreTick) };
+  var formatTick = currentLanguage === "ko" ? formatKoreanScoreTick : formatJapaneseScoreTick;
+  return { tickmode: "array", tickvals: tickvals, ticktext: tickvals.map(formatTick) };
+}
+
+function formatJapaneseScoreTick(value) {
+  var absoluteValue = Math.abs(value);
+  var numberFormat = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 });
+  if (absoluteValue >= 100000000) return `${numberFormat.format(value / 100000000)}億`;
+  if (absoluteValue >= 10000) return `${numberFormat.format(value / 10000)}万`;
+  return new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 0 }).format(value);
 }
 
 async function togglePreviousEventEstimate() {
@@ -996,7 +1070,7 @@ function updateTrendChart() {
       autosize: true, height: 230,
       margin: { t: 4, r: 16, b: 58, l: 64 },
       paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-      font: { family: "DM Sans, Noto Sans KR, sans-serif", size: 10, color: "#5b5963" },
+      font: { family: "DM Sans, Noto Sans JP, Noto Sans KR, sans-serif", size: 10, color: "#5b5963" },
       hovermode: "closest", showlegend: false,
       uirevision: `${config.eventID}-${config.startTime}-${config.endTime}-${idolIndex}-${tier}-${rankTrendEnabled}`,
       xaxis: {
@@ -1231,7 +1305,8 @@ function timeDiff(start, end) {
 function formatTokyoTimestamp(value, short = false) {
   var parsedDate = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(parsedDate.getTime())) return String(value);
-  var formatted = new Intl.DateTimeFormat(currentLanguage === "ko" ? "ko-KR" : "en-US", {
+  var locale = currentLanguage === "ko" ? "ko-KR" : currentLanguage === "ja" ? "ja-JP" : "en-US";
+  var formatted = new Intl.DateTimeFormat(locale, {
     timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", ...(short ? {} : { second: "2-digit" }), hourCycle: "h23",
   }).format(parsedDate);
